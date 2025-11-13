@@ -1,20 +1,25 @@
 {
-  "name": "ts-starter",
+  "name": "cliptabular",
   "version": "0.0.0",
   "description": "",
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jimmy-guzman/ts-starter.git"
+    "url": "git+https://github.com/jimmy-guzman/cliptabular.git"
   },
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs"
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
   },
-  "main": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
   "files": [
     "dist"
   ],

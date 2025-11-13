@@ -1,1 +1,1 @@
-export const lib = "";
+export { parse } from "./parse";
