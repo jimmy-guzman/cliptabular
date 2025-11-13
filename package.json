@@ -1,0 +1,66 @@
+{
+  "name": "ts-starter",
+  "version": "0.0.0",
+  "description": "",
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jimmy-guzman/ts-starter.git"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs"
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "coverage": "vitest run --coverage",
+    "dev": "tsdown --watch",
+    "format": "prettier --check --cache --experimental-cli .",
+    "format:fix": "prettier --write --cache --experimental-cli .",
+    "knip": "knip",
+    "lint": "eslint --cache --cache-location node_modules/.cache/eslint .",
+    "lint:fix": "pnpm lint --fix",
+    "prepack": "pnpm build && clean-pkg-json",
+    "prepare": "is-ci || lefthook install",
+    "test": "vitest",
+    "typecheck": "tsc"
+  },
+  "prettier": "@jimmy.codes/prettier-config",
+  "devDependencies": {
+    "@commitlint/config-conventional": "20.0.0",
+    "@jimmy.codes/eslint-config": "6.18.0",
+    "@jimmy.codes/prettier-config": "2.1.1",
+    "@types/node": "22.18.12",
+    "@vitest/coverage-v8": "4.0.8",
+    "clean-pkg-json": "1.3.0",
+    "commitlint": "20.1.0",
+    "eslint": "9.39.1",
+    "gitzy": "6.5.3",
+    "is-ci": "4.1.0",
+    "jiti": "2.6.1",
+    "knip": "5.69.1",
+    "lefthook": "2.0.4",
+    "prettier": "3.6.2",
+    "publint": "0.3.15",
+    "tsdown": "0.16.4",
+    "typescript": "5.9.3",
+    "vitest": "4.0.8"
+  },
+  "packageManager": "pnpm@10.22.0",
+  "engines": {
+    "node": ">= 20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "gitzy": {
+    "useCommitlintConfig": true
+  }
+}
