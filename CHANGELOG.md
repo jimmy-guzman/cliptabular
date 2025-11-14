@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/jimmy-guzman/cliptabular/compare/v1.0.1...v1.1.0) (2025-11-14)
+
+
+### Features
+
+* ✨ add `skipEmptyCells` option ([#4](https://github.com/jimmy-guzman/cliptabular/issues/4)) ([0d0ca02](https://github.com/jimmy-guzman/cliptabular/commit/0d0ca020c705aaa4cd365befaf3b4c8df1c99257))
+
 ## [1.0.1](https://github.com/jimmy-guzman/cliptabular/compare/v1.0.0...v1.0.1) (2025-11-14)
 
 
