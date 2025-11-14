@@ -2,10 +2,11 @@
 
 > Parse clipboard data from Excel, CSV, and other delimited formats into clean rows. Handles tabs, commas, semicolons, pipes, quoted fields, currency, percentages, negative numbers, and the messy reality of spreadsheet copy/paste.
 
-![version][version-badge]
-![downloads][downloads-badge]
-![install size][install-size-badge]
-![license][license-badge]
+![actions][actions-badge]
+[![version][version-badge]][package]
+[![downloads][downloads-badge]][npmtrends]
+[![Install Size][install-size-badge]][packagephobia]
+[![License][license-badge]][license]
 
 ---
 
@@ -196,7 +197,12 @@ parse("A,B\nC", { padRows: true, emptyValue: "EMPTY" });
 
 ---
 
+[actions-badge]: https://flat.badgen.net/github/checks/jimmy-guzman/cliptabular/main?icon=github
 [version-badge]: https://flat.badgen.net/npm/v/cliptabular?icon=npm
+[package]: https://www.npmjs.com/package/cliptabular
 [downloads-badge]: https://flat.badgen.net/npm/dm/cliptabular?icon=npm
-[install-size-badge]: https://flat.badgen.net/packagephobia/install/cliptabular?icon=packagephobia
+[npmtrends]: https://www.npmtrends.com/cliptabular
+[license]: https://github.com/jimmy-guzman/cliptabular/blob/master/LICENSE
 [license-badge]: https://flat.badgen.net/github/license/jimmy-guzman/cliptabular?icon=github
+[packagephobia]: https://packagephobia.com/result?p=cliptabular
+[install-size-badge]: https://flat.badgen.net/packagephobia/install/cliptabular?icon=packagephobia
