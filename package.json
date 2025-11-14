@@ -1,26 +1,37 @@
 {
-  "name": "ts-starter",
+  "name": "cliptabular",
   "version": "0.0.0",
   "description": "",
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jimmy-guzman/ts-starter.git"
+    "url": "git+https://github.com/jimmy-guzman/cliptabular.git"
   },
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs"
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
-  "main": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsdown",
-    "coverage": "vitest run --coverage",
+    "coverage": "vitest run --typecheck --coverage",
     "dev": "tsdown --watch",
     "format": "prettier --check --cache --experimental-cli .",
     "format:fix": "prettier --write --cache --experimental-cli .",
@@ -29,7 +40,7 @@
     "lint:fix": "pnpm lint --fix",
     "prepack": "pnpm build && clean-pkg-json",
     "prepare": "is-ci || lefthook install",
-    "test": "vitest",
+    "test": "vitest --typecheck",
     "typecheck": "tsc"
   },
   "prettier": "@jimmy.codes/prettier-config",

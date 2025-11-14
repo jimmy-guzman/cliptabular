@@ -1,1 +1,2 @@
-export const lib = "";
+export { parse } from "./parse";
+export type { ParseOptions } from "./parse";

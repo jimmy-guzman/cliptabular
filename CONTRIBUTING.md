@@ -3,7 +3,7 @@
 Clone the repo, by running the following:
 
 ```bash
-gh repo clone jimmy-guzman/ts-starter
+gh repo clone jimmy-guzman/cliptabular
 ```
 
 Use latest version of node, by running the following:

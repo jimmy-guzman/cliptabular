@@ -1,5 +1,5 @@
-import { lib } from "./index";
+import { parse } from "./index";
 
-test("lib", () => {
-  expect(lib).toBe("");
+test("parse", () => {
+  expect(parse).toBeDefined();
 });
