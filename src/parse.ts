@@ -319,8 +319,6 @@ export function parse<E = null>(
         processedCells = processedCells.filter((cell) => cell !== emptyVal);
       }
 
-      if (skipEmptyRows && processedCells.length === 0) continue;
-
       result.push(processedCells);
     }
 

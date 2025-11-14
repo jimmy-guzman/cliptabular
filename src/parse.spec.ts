@@ -1500,74 +1500,6 @@ describe("parse", () => {
     });
   });
 
-  describe("Examples", () => {
-    it("should match README percentage example", () => {
-      const input = "Rate\n15.5%\n1,234.56%";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["Rate"], ["15.5%"], ["1,234.56%"]]);
-    });
-
-    it("should match README CSV quoted example", () => {
-      const input = '"Smith, John","New York, NY"';
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["Smith, John", "New York, NY"]]);
-    });
-
-    it("should match README currency example", () => {
-      const input = "Item,Price\nWidget,$1,234.56";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([
-        ["Item", "Price"],
-        ["Widget", "$1,234.56"],
-      ]);
-    });
-
-    it("should match README empty value example", () => {
-      const input = "A,,C\n,B,";
-      const result = parse(input, { emptyValue: "N/A" });
-
-      expect(result).toStrictEqual([
-        ["A", "N/A", "C"],
-        ["N/A", "B", "N/A"],
-      ]);
-    });
-
-    it("should match README skipEmptyRows example", () => {
-      const input = "A,B\n\nC,D";
-      const result = parse(input, { skipEmptyRows: true });
-
-      expect(result).toStrictEqual([
-        ["A", "B"],
-        ["C", "D"],
-      ]);
-    });
-
-    it("should match README Excel tab example", () => {
-      const input = "Name\tAge\tCity\nJohn\t30\tNew York";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([
-        ["Name", "Age", "City"],
-        ["John", "30", "New York"],
-      ]);
-    });
-  });
-
-  describe("Bugs", () => {
-    it("should parse values of varying lengths with and without commas", () => {
-      const input = "1000, 22,000, 3,500\n4, 500,000,000, 60, 70000";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([
-        ["1000", "22,000", "3,500"],
-        ["4", "500,000,000", "60", "70000"],
-      ]);
-    });
-  });
-
   describe("skipEmptyCells option", () => {
     describe("Basic functionality", () => {
       it("should skip empty cells in a row", () => {
@@ -1942,6 +1874,144 @@ describe("parse", () => {
           ["D", "E"],
         ]);
       });
+    });
+
+    describe("Tab-delimited edge cases", () => {
+      it("should keep empty array for tab-delimited when skipEmptyRows is false", () => {
+        const input = "A\tB\tC\n\t\t\nD\tE\tF";
+        const result = parse(input, {
+          skipEmptyCells: true,
+          skipEmptyRows: false,
+        });
+
+        expect(result).toStrictEqual([["A", "B", "C"], [], ["D", "E", "F"]]);
+      });
+
+      it("should handle tab-delimited with only empty cells throughout", () => {
+        const input = "\t\t\n\t\t";
+        const result = parse(input, {
+          skipEmptyCells: true,
+          skipEmptyRows: false,
+        });
+
+        expect(result).toStrictEqual([[], []]);
+      });
+    });
+
+    describe("Large datasets", () => {
+      it("should skip empty cells in large dataset (tab-delimited)", () => {
+        const rows = Array.from({ length: 10 }, (_, i) => {
+          return `${i}\t\t${i * 2}\t\t${i * 3}`;
+        });
+        const input = `A\t\tB\t\tC\n${rows.join("\n")}`;
+        const result = parse(input, { skipEmptyCells: true });
+
+        expect(result).toHaveLength(11);
+        expect(result[0]).toStrictEqual(["A", "B", "C"]);
+        expect(result[1]).toStrictEqual(["0", "0", "0"]);
+        expect(result[10]).toStrictEqual(["9", "18", "27"]);
+      });
+
+      it("should skip empty cells in large CSV dataset", () => {
+        const rows = Array.from({ length: 10 }, (_, i) => {
+          return `${i},,${i * 2},,${i * 3}`;
+        });
+        const input = `A,,B,,C\n${rows.join("\n")}`;
+        const result = parse(input, { skipEmptyCells: true });
+
+        expect(result).toHaveLength(11);
+        expect(result[0]).toStrictEqual(["A", "B", "C"]);
+        expect(result[1]).toStrictEqual(["0", "0", "0"]);
+        expect(result[10]).toStrictEqual(["9", "18", "27"]);
+      });
+
+      it("should handle rows with many empty cells (tab)", () => {
+        const input = "A\t\tC\t\tE\t\tG\t\tI\nJ\t\tL\t\tN\t\tP\t\tR";
+        const result = parse(input, { skipEmptyCells: true });
+
+        expect(result).toStrictEqual([
+          ["A", "C", "E", "G", "I"],
+          ["J", "L", "N", "P", "R"],
+        ]);
+      });
+
+      it("should handle rows with many empty cells (CSV)", () => {
+        const input = "A,,C,,E,,G,,I\nJ,,L,,N,,P,,R";
+        const result = parse(input, { skipEmptyCells: true });
+
+        expect(result).toStrictEqual([
+          ["A", "C", "E", "G", "I"],
+          ["J", "L", "N", "P", "R"],
+        ]);
+      });
+    });
+  });
+
+  describe("Examples", () => {
+    it("should match README percentage example", () => {
+      const input = "Rate\n15.5%\n1,234.56%";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["Rate"], ["15.5%"], ["1,234.56%"]]);
+    });
+
+    it("should match README CSV quoted example", () => {
+      const input = '"Smith, John","New York, NY"';
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["Smith, John", "New York, NY"]]);
+    });
+
+    it("should match README currency example", () => {
+      const input = "Item,Price\nWidget,$1,234.56";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Item", "Price"],
+        ["Widget", "$1,234.56"],
+      ]);
+    });
+
+    it("should match README empty value example", () => {
+      const input = "A,,C\n,B,";
+      const result = parse(input, { emptyValue: "N/A" });
+
+      expect(result).toStrictEqual([
+        ["A", "N/A", "C"],
+        ["N/A", "B", "N/A"],
+      ]);
+    });
+
+    it("should match README skipEmptyRows example", () => {
+      const input = "A,B\n\nC,D";
+      const result = parse(input, { skipEmptyRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+      ]);
+    });
+
+    it("should match README Excel tab example", () => {
+      const input = "Name\tAge\tCity\nJohn\t30\tNew York";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Age", "City"],
+        ["John", "30", "New York"],
+      ]);
+    });
+  });
+
+  describe("Bugs", () => {
+    it("should parse values of varying lengths with and without commas", () => {
+      const input = "1000, 22,000, 3,500\n4, 500,000,000, 60, 70000";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["1000", "22,000", "3,500"],
+        ["4", "500,000,000", "60", "70000"],
+      ]);
     });
   });
 });
