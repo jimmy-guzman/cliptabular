@@ -219,11 +219,6 @@ function isCommaInNumber(
   return true;
 }
 
-/**
- * Options for `parse`.
- *
- * @template E Optional empty cell value type (`null` by default).
- */
 export interface ParseOptions<E = null> {
   /**
    * Value to use for empty cells.
@@ -235,9 +230,23 @@ export interface ParseOptions<E = null> {
    * Pads shorter rows with `emptyValue` so all rows have the same number
    * of columns. Makes the output rectangular.
    *
+   * Note: If combined with `skipEmptyCells`, skipEmptyCells takes precedence
+   * and padding will not occur.
+   *
    * @default false
    */
   padRows?: boolean;
+  /**
+   * Whether to skip empty cells within each row.
+   *
+   * When `true`, cells containing `emptyValue` are filtered out after trimming.
+   * This can result in rows of varying lengths.
+   *
+   * Note: If combined with `padRows`, skipEmptyCells takes precedence.
+   *
+   * @default false
+   */
+  skipEmptyCells?: boolean;
   /**
    * Whether to skip empty rows entirely.
    *
@@ -252,7 +261,6 @@ export interface ParseOptions<E = null> {
    */
   trim?: boolean;
 }
-
 /**
  * Parse clipboard-style tabular text into a 2D array of cells.
  *
@@ -277,6 +285,7 @@ export function parse<E = null>(
   const {
     emptyValue = null as E,
     padRows = false,
+    skipEmptyCells = false,
     skipEmptyRows = false,
     trim = true,
   } = options;
@@ -300,16 +309,20 @@ export function parse<E = null>(
       if (skipEmptyRows && !row.trim()) continue;
 
       const cells = row.split(TAB);
-      const processedCells = cells.map((cell) => {
+      let processedCells = cells.map((cell) => {
         const trimmedCell = trim ? cell.trim() : cell;
 
         return trimmedCell === "" ? emptyVal : trimmedCell;
       }) as (E | string)[];
 
+      if (skipEmptyCells) {
+        processedCells = processedCells.filter((cell) => cell !== emptyVal);
+      }
+
       result.push(processedCells);
     }
 
-    if (padRows && result.length > 0) {
+    if (padRows && !skipEmptyCells && result.length > 0) {
       const maxColumns = Math.max(...result.map((row) => row.length));
 
       for (const row of result) {
@@ -360,10 +373,19 @@ export function parse<E = null>(
     const trimmedCell = trim ? currentCell.trim() : currentCell;
 
     cells.push(trimmedCell === "" ? (emptyVal as E) : trimmedCell);
-    result.push(cells);
+
+    let processedCells = cells;
+
+    if (skipEmptyCells) {
+      processedCells = cells.filter((cell) => cell !== emptyVal);
+    }
+
+    if (skipEmptyRows && processedCells.length === 0) continue;
+
+    result.push(processedCells);
   }
 
-  if (padRows && result.length > 0) {
+  if (padRows && !skipEmptyCells && result.length > 0) {
     const maxColumns = Math.max(...result.map((row) => row.length));
 
     for (const row of result) {
