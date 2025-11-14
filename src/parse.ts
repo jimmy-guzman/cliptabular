@@ -1,23 +1,166 @@
+import type { Delim } from "./constants";
+
+import { DELIM_PRIORITY, DELIMS } from "./constants";
+
 /**
- * Auto-detects the delimiter (tabs for Excel, commas for CSV).
+ * Counts how many times a delimiter appears in a line,
+ * ignoring any occurrences inside quoted segments.
  */
-function detectDelimiterFromLines(lines: string[]) {
-  for (const line of lines.slice(0, 5)) {
-    if (line.includes("\t")) {
-      return "\t";
+function countDelimiterOutsideQuotes(line: string, delimiter: string) {
+  let count = 0;
+  let insideQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+
+    if (char === '"') {
+      if (insideQuotes && nextChar === '"') {
+        i++;
+      } else {
+        insideQuotes = !insideQuotes;
+      }
+      continue;
     }
 
-    if (line.includes(",")) {
-      return ",";
+    if (!insideQuotes && char === delimiter) {
+      count++;
     }
   }
 
-  return ",";
+  return count;
+}
+
+interface DelimStats {
+  linesWithDelimiter: number;
+  total: number;
+}
+
+function createHeaderCounts(): Record<Delim, number> {
+  const headerCounts = {} as Record<Delim, number>;
+
+  for (const delim of DELIMS) {
+    headerCounts[delim] = 0;
+  }
+
+  return headerCounts;
+}
+
+function createStats(): Record<Delim, DelimStats> {
+  const stats = {} as Record<Delim, DelimStats>;
+
+  for (const delim of DELIMS) {
+    stats[delim] = { linesWithDelimiter: 0, total: 0 };
+  }
+
+  return stats;
 }
 
 /**
- * Returns true if the comma at `commaIndex` is part of a numeric value,
- * e.g. 1,234.56, $1,234.56, -$1,234.56, or 1,234.56%.
+ * Auto-detects the most likely delimiter for a set of lines.
+ *
+ * - Samples up to the first 20 non-empty lines.
+ * - Hard-prefers tabs when present (Excel / TSV clipboard).
+ * - Scores each candidate delimiter based on header usage,
+ *   per-line consistency, and overall frequency.
+ * - Ignores delimiters that appear only inside quotes.
+ * - Falls back to comma when no strong candidate is found.
+ */
+function detectDelimiterFromLines(lines: string[]): "," | Delim {
+  const sample = lines.slice(0, 20).filter((line) => line.length > 0);
+
+  if (sample.length === 0) {
+    return ",";
+  }
+
+  // Hard preference for tabs when they appear outside quotes (Excel / TSV fast-path)
+  for (const line of sample) {
+    if (countDelimiterOutsideQuotes(line, "\t") > 0) {
+      return "\t";
+    }
+  }
+
+  const [header] = sample;
+
+  const headerCounts = createHeaderCounts();
+  const stats = createStats();
+
+  for (const delim of DELIMS) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- header is guaranteed to exist here
+    headerCounts[delim] = countDelimiterOutsideQuotes(header!, delim);
+  }
+
+  const lineCount = sample.length;
+
+  for (const line of sample) {
+    for (const delim of DELIMS) {
+      const count = countDelimiterOutsideQuotes(line, delim);
+
+      if (count > 0) {
+        const delimStats = stats[delim];
+
+        delimStats.total += count;
+        delimStats.linesWithDelimiter += 1;
+      }
+    }
+  }
+
+  const headerDelimsWithMultiple = DELIMS.filter((d) => headerCounts[d] > 1);
+  const headerBonusDelim =
+    headerDelimsWithMultiple.length === 1 ? headerDelimsWithMultiple[0] : null;
+
+  const hasNonSpaceDelimiter = DELIMS.some(
+    (d) => d !== " " && stats[d].total > 0,
+  );
+
+  let bestDelim: "," | Delim = ",";
+  let bestScore = -1;
+
+  for (const delim of DELIMS) {
+    const { linesWithDelimiter, total } = stats[delim];
+
+    if (!total) continue;
+    if (delim === " " && hasNonSpaceDelimiter) continue;
+
+    const headerCount = headerCounts[delim];
+    const avgCount = total / lineCount;
+    const consistency = linesWithDelimiter / lineCount;
+
+    let score =
+      headerCount * 3 +
+      consistency * 2 * avgCount +
+      avgCount * linesWithDelimiter;
+
+    if (headerBonusDelim && delim === headerBonusDelim) {
+      score *= 1.5;
+    }
+
+    score += DELIM_PRIORITY[delim];
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestDelim = delim;
+    }
+  }
+
+  if (bestScore <= 0) {
+    return ",";
+  }
+
+  return bestDelim;
+}
+
+/**
+ * Returns true if the comma at `commaIndex` is part of a numeric value
+ * rather than a delimiter.
+ *
+ * Matches patterns like:
+ * - 1,234.56
+ * - $1,234.56
+ * - -$1,234.56
+ * - 1,234.56%
+ *
+ * and supports multiple 3-digit groups when building up the cell.
  */
 function isCommaInNumber(
   text: string,
@@ -52,17 +195,49 @@ function isCommaInNumber(
 
 type EmptyValue = null | string;
 
+/**
+ * Options for `parse`.
+ *
+ * @template E Optional empty cell value type (`null` by default).
+ */
 export interface ParseOptions<E extends EmptyValue = null> {
-  /** Value to use for empty cells (default: null). */
+  /**
+   * Value to use for empty cells.
+   *
+   * Defaults to `null`. Changing this will update the inferred return type.
+   */
   emptyValue?: E;
-  /** Whether to skip empty rows. */
+  /**
+   * Whether to skip empty rows entirely.
+   *
+   * Defaults to `false`. When `false`, empty rows are represented as
+   * a single-cell row containing the `emptyValue`.
+   */
   skipEmptyRows?: boolean;
-  /** Whether to trim whitespace from cells. */
+  /**
+   * Whether to trim whitespace from each cell.
+   *
+   * Defaults to `true`.
+   */
   trim?: boolean;
 }
 
 /**
- * Parses clipboard text into a 2D array.
+ * Parse clipboard-style tabular text into a 2D array of cells.
+ *
+ * - Auto-detects the delimiter (tabs, commas, semicolons, pipes, spaces, etc.).
+ * - Treats Excel tab-delimited clipboard data as a fast path.
+ * - Respects quoted fields and escaped quotes.
+ * - Preserves numeric commas (currency, thousands separators, percentages)
+ *   when comma is the delimiter.
+ *
+ * @template E Optional empty cell value type (`null` by default).
+ *
+ * @param clipboardText Raw clipboard text (e.g. from Excel / CSV copy-paste).
+ *
+ * @param options Parsing behavior configuration.
+ *
+ * @returns A 2D array of cells, with empty cells mapped to `emptyValue`.
  */
 export function parse<E extends EmptyValue = null>(
   clipboardText: string,
@@ -114,17 +289,14 @@ export function parse<E extends EmptyValue = null>(
       const nextChar = row[i + 1];
 
       if (char === '"') {
-        // Escaped quotes ("")
         if (insideQuotes && nextChar === '"') {
           currentCell += '"';
           i++;
         } else {
           insideQuotes = !insideQuotes;
         }
-      } else if (char === "," && !insideQuotes) {
-        const isPartOfNumber = isCommaInNumber(row, i, currentCell);
-
-        if (isPartOfNumber) {
+      } else if (char === delimiter && !insideQuotes) {
+        if (delimiter === "," && isCommaInNumber(row, i, currentCell)) {
           currentCell += char;
         } else {
           const trimmedCell = trim ? currentCell.trim() : currentCell;

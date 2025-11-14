@@ -697,11 +697,147 @@ describe("parse", () => {
       expect(result).toStrictEqual([["Value"], ["1,234"]]);
     });
 
-    it("should prefer tabs as delimiter even when tab is inside quotes", () => {
+    it("should ignore delimiters inside quotes when detecting delimiter", () => {
       const input = '"Hello\tWorld",123';
       const result = parse(input);
 
-      expect(result).toStrictEqual([['"Hello', 'World",123']]);
+      expect(result).toStrictEqual([["Hello\tWorld", "123"]]);
+    });
+  });
+
+  describe("Additional delimiters & header weighting", () => {
+    it("should detect semicolon-delimited data", () => {
+      const input = "Name;Age;City\nJohn;30;New York\nJane;25;Boston";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Age", "City"],
+        ["John", "30", "New York"],
+        ["Jane", "25", "Boston"],
+      ]);
+    });
+
+    it("should detect pipe-delimited data", () => {
+      const input = "Name|Age|City\nJohn|30|New York\nJane|25|Boston";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Age", "City"],
+        ["John", "30", "New York"],
+        ["Jane", "25", "Boston"],
+      ]);
+    });
+
+    it("should detect space-delimited data when spaces are consistent separators", () => {
+      const input = "A B C\n1 2 3\n4 5 6";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["1", "2", "3"],
+        ["4", "5", "6"],
+      ]);
+    });
+
+    it("should not pick space as delimiter when comma is clearly better", () => {
+      const input = "A, B, C\n1, 2, 3";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["1", "2", "3"],
+      ]);
+    });
+
+    it("should detect caret-delimited data", () => {
+      const input = "A^B^C\n1^2^3";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["1", "2", "3"],
+      ]);
+    });
+
+    it("should detect tilde-delimited data", () => {
+      const input = "A~B~C\n1~2~3";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["1", "2", "3"],
+      ]);
+    });
+
+    it("should detect colon-delimited data", () => {
+      const input = "A:B:C\n1:2:3";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["1", "2", "3"],
+      ]);
+    });
+
+    it("should detect unit separator (ASCII 31) as delimiter", () => {
+      const us = "\u001F";
+      const input = `A${us}B${us}C\n1${us}2${us}3`;
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["1", "2", "3"],
+      ]);
+    });
+
+    it("should use header delimiter even when body rows are sparse", () => {
+      const input = "Name|Age|City|Country\nAlice\nBob\nCharlie";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Age", "City", "Country"],
+        ["Alice"],
+        ["Bob"],
+        ["Charlie"],
+      ]);
+    });
+
+    it("should prefer header delimiter when body lines use different separators", () => {
+      const input = "Name,Age,City\nAlice 30 New York\nBob 25 Boston";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Age", "City"],
+        ["Alice 30 New York"],
+        ["Bob 25 Boston"],
+      ]);
+    });
+
+    it("should prefer comma over semicolon when scores are tied (priority order)", () => {
+      const input = "A,B;C\n1,2;3";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B;C"],
+        ["1", "2;3"],
+      ]);
+    });
+
+    it("should prefer comma over colon when both appear with similar frequency", () => {
+      const input = "Name: Alice, Age: 30\nName: Bob, Age: 25";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name: Alice", "Age: 30"],
+        ["Name: Bob", "Age: 25"],
+      ]);
+    });
+
+    it("should ignore candidate delimiters inside quotes for all delimiter types", () => {
+      const input = '"Smith; John"|30|"New York, NY"';
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["Smith; John", "30", "New York, NY"]]);
     });
   });
 

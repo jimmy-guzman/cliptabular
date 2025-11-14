@@ -1,17 +1,19 @@
 # cliptabular 📋➡️📊
 
-> Parse clipboard data from Excel or CSV into clean rows. Handles tabs, commas, quoted fields, currency, percentages, negative numbers, and the messy reality of spreadsheet copy/paste.
+> Parse clipboard data from Excel, CSV, and other delimited formats into clean rows. Handles tabs, commas, semicolons, pipes, quoted fields, currency, percentages, negative numbers, and the messy reality of spreadsheet copy/paste.
 
-![version][version-badge]  
-![downloads][downloads-badge]  
-![install size][install-size-badge]  
+![version][version-badge]
+![downloads][downloads-badge]
+![install size][install-size-badge]
 ![license][license-badge]
 
 ---
 
 ## Features
 
-- Auto-detects Excel (tab-delimited) vs CSV (comma-delimited)
+- **Smart delimiter detection** (tabs, commas, semicolons, pipes, spaces, etc.)
+- Prefers Excel’s tab-delimited format automatically
+- Ignores delimiters inside quotes
 - Handles quoted fields (`"Smith, John"`)
 - Handles escaped quotes (`""Hello""`)
 - Handles numbers with grouping (`1,234.56`)
@@ -42,6 +44,20 @@ import { parse } from "cliptabular";
 const text = await navigator.clipboard.readText();
 const rows = parse(text);
 ```
+
+---
+
+## Delimiter Detection
+
+`parse` automatically figures out the correct delimiter by analyzing the first lines of clipboard text.
+
+It:
+
+- prefers **tabs** when present (Excel copy/paste)
+- detects **commas**, **semicolons**, **pipes**, **spaces**, and more
+- ignores delimiters **inside quotes**
+- uses headers to improve accuracy
+- falls back to **comma** when no structure is detected
 
 ---
 
