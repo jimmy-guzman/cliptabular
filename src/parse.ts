@@ -261,6 +261,29 @@ export interface ParseOptions<E = null> {
    */
   trim?: boolean;
 }
+
+/**
+ * Parse clipboard-style tabular text into a 2D array of cells.
+ *
+ * - Auto-detects the delimiter (tabs, commas, semicolons, pipes, spaces, etc.).
+ * - Treats Excel tab-delimited clipboard data as a fast path.
+ * - Respects quoted fields and escaped quotes.
+ * - Preserves numeric commas (currency, thousands separators, percentages)
+ *   when comma is the delimiter.
+ *
+ * @template E Optional empty cell value type (`null` by default).
+ *
+ * @param clipboardText Raw clipboard text (e.g. from Excel / CSV copy-paste).
+ *
+ * @param options Parsing behavior configuration with skipEmptyCells enabled.
+ *
+ * @returns A 2D array of string cells (empty cells are filtered out).
+ */
+export function parse(
+  clipboardText: string,
+  options: ParseOptions<never> & { skipEmptyCells: true },
+): string[][];
+
 /**
  * Parse clipboard-style tabular text into a 2D array of cells.
  *
@@ -278,6 +301,11 @@ export interface ParseOptions<E = null> {
  *
  * @returns A 2D array of cells, with empty cells mapped to `emptyValue`.
  */
+export function parse<E = null>(
+  clipboardText: string,
+  options?: ParseOptions<E>,
+): (E | string)[][];
+
 export function parse<E = null>(
   clipboardText: string,
   options: ParseOptions<E> = {},

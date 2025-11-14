@@ -43,4 +43,50 @@ describe("parse emptyValue type inference", () => {
     expectTypeOf(result).toEqualTypeOf<(null | string)[][]>();
     assertType<(null | string)[][]>(result);
   });
+
+  test("should infer string[][] when skipEmptyCells is true", () => {
+    const result = parse("A,,C\n,B,", { skipEmptyCells: true });
+
+    expectTypeOf(result).toEqualTypeOf<string[][]>();
+    assertType<string[][]>(result);
+  });
+
+  test("should infer string[][] when skipEmptyCells is true with custom emptyValue", () => {
+    const result = parse("A,,C\n,B,", {
+      emptyValue: "EMPTY",
+      skipEmptyCells: true,
+    });
+
+    expectTypeOf(result).toEqualTypeOf<string[][]>();
+    assertType<string[][]>(result);
+  });
+
+  test("should infer (null | string)[][] when skipEmptyCells is false", () => {
+    const result = parse("A,,C\n,B,", { skipEmptyCells: false });
+
+    expectTypeOf(result).toEqualTypeOf<(null | string)[][]>();
+    assertType<(null | string)[][]>(result);
+  });
+
+  test("should infer (0 | string)[][] when skipEmptyCells is false with number emptyValue", () => {
+    const result = parse("A,,C\n,B,", {
+      emptyValue: 0 as const,
+      skipEmptyCells: false,
+    });
+
+    expectTypeOf(result).toEqualTypeOf<(0 | string)[][]>();
+    assertType<(0 | string)[][]>(result);
+  });
+
+  test("should work with all options combined", () => {
+    const result = parse("A,,C\n,B,", {
+      emptyValue: "N/A",
+      skipEmptyCells: true,
+      skipEmptyRows: true,
+      trim: true,
+    });
+
+    expectTypeOf(result).toEqualTypeOf<string[][]>();
+    assertType<string[][]>(result);
+  });
 });
