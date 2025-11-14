@@ -1,12 +1,32 @@
-import type { Delim } from "./constants";
+const TAB = "\t";
+const COMMA = ",";
 
-import { DELIM_PRIORITY, DELIMS } from "./constants";
+const DELIMITERS_ENTRIES = [
+  [TAB, 10],
+  [COMMA, 8],
+  [";", 4],
+  ["|", 3],
+  [" ", 1],
+  ["\u001F", 0],
+  ["^", 0],
+  ["~", 0],
+  [":", 0],
+] as const;
+
+const DELIMITERS = DELIMITERS_ENTRIES.map(([delimiter]) => delimiter);
+
+type Delimiter = (typeof DELIMITERS)[number];
+
+const DELIMITER_PRIORITY = Object.fromEntries(DELIMITERS_ENTRIES) as Record<
+  Delimiter,
+  number
+>;
 
 /**
  * Counts how many times a delimiter appears in a line,
  * ignoring any occurrences inside quoted segments.
  */
-function countDelimiterOutsideQuotes(line: string, delimiter: string) {
+function countDelimiterOutsideQuotes(line: string, delimiter: Delimiter) {
   let count = 0;
   let insideQuotes = false;
 
@@ -36,21 +56,21 @@ interface DelimStats {
   total: number;
 }
 
-function createHeaderCounts(): Record<Delim, number> {
-  const headerCounts = {} as Record<Delim, number>;
+function createHeaderCounts(): Record<Delimiter, number> {
+  const headerCounts = {} as Record<Delimiter, number>;
 
-  for (const delim of DELIMS) {
-    headerCounts[delim] = 0;
+  for (const delimiter of DELIMITERS) {
+    headerCounts[delimiter] = 0;
   }
 
   return headerCounts;
 }
 
-function createStats(): Record<Delim, DelimStats> {
-  const stats = {} as Record<Delim, DelimStats>;
+function createStats(): Record<Delimiter, DelimStats> {
+  const stats = {} as Record<Delimiter, DelimStats>;
 
-  for (const delim of DELIMS) {
-    stats[delim] = { linesWithDelimiter: 0, total: 0 };
+  for (const delimiter of DELIMITERS) {
+    stats[delimiter] = { linesWithDelimiter: 0, total: 0 };
   }
 
   return stats;
@@ -66,17 +86,17 @@ function createStats(): Record<Delim, DelimStats> {
  * - Ignores delimiters that appear only inside quotes.
  * - Falls back to comma when no strong candidate is found.
  */
-function detectDelimiterFromLines(lines: string[]): "," | Delim {
+function detectDelimiterFromLines(lines: string[]): Delimiter | typeof COMMA {
   const sample = lines.slice(0, 20).filter((line) => line.length > 0);
 
   if (sample.length === 0) {
-    return ",";
+    return COMMA;
   }
 
   // Hard preference for tabs when they appear outside quotes (Excel / TSV fast-path)
   for (const line of sample) {
-    if (countDelimiterOutsideQuotes(line, "\t") > 0) {
-      return "\t";
+    if (countDelimiterOutsideQuotes(line, TAB) > 0) {
+      return TAB;
     }
   }
 
@@ -85,44 +105,46 @@ function detectDelimiterFromLines(lines: string[]): "," | Delim {
   const headerCounts = createHeaderCounts();
   const stats = createStats();
 
-  for (const delim of DELIMS) {
+  for (const delimiter of DELIMITERS) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- header is guaranteed to exist here
-    headerCounts[delim] = countDelimiterOutsideQuotes(header!, delim);
+    headerCounts[delimiter] = countDelimiterOutsideQuotes(header!, delimiter);
   }
 
   const lineCount = sample.length;
 
   for (const line of sample) {
-    for (const delim of DELIMS) {
-      const count = countDelimiterOutsideQuotes(line, delim);
+    for (const delimiter of DELIMITERS) {
+      const count = countDelimiterOutsideQuotes(line, delimiter);
 
       if (count > 0) {
-        const delimStats = stats[delim];
+        const delimiterStats = stats[delimiter];
 
-        delimStats.total += count;
-        delimStats.linesWithDelimiter += 1;
+        delimiterStats.total += count;
+        delimiterStats.linesWithDelimiter += 1;
       }
     }
   }
 
-  const headerDelimsWithMultiple = DELIMS.filter((d) => headerCounts[d] > 1);
+  const headerDelimsWithMultiple = DELIMITERS.filter(
+    (delimiter) => headerCounts[delimiter] > 1,
+  );
   const headerBonusDelim =
     headerDelimsWithMultiple.length === 1 ? headerDelimsWithMultiple[0] : null;
 
-  const hasNonSpaceDelimiter = DELIMS.some(
-    (d) => d !== " " && stats[d].total > 0,
+  const hasNonSpaceDelimiter = DELIMITERS.some(
+    (delimiter) => delimiter !== " " && stats[delimiter].total > 0,
   );
 
-  let bestDelim: "," | Delim = ",";
+  let bestDelim: Delimiter | typeof COMMA = COMMA;
   let bestScore = -1;
 
-  for (const delim of DELIMS) {
-    const { linesWithDelimiter, total } = stats[delim];
+  for (const delimiter of DELIMITERS) {
+    const { linesWithDelimiter, total } = stats[delimiter];
 
     if (!total) continue;
-    if (delim === " " && hasNonSpaceDelimiter) continue;
+    if (delimiter === " " && hasNonSpaceDelimiter) continue;
 
-    const headerCount = headerCounts[delim];
+    const headerCount = headerCounts[delimiter];
     const avgCount = total / lineCount;
     const consistency = linesWithDelimiter / lineCount;
 
@@ -131,20 +153,20 @@ function detectDelimiterFromLines(lines: string[]): "," | Delim {
       consistency * 2 * avgCount +
       avgCount * linesWithDelimiter;
 
-    if (headerBonusDelim && delim === headerBonusDelim) {
+    if (headerBonusDelim && delimiter === headerBonusDelim) {
       score *= 1.5;
     }
 
-    score += DELIM_PRIORITY[delim];
+    score += DELIMITER_PRIORITY[delimiter];
 
     if (score > bestScore) {
       bestScore = score;
-      bestDelim = delim;
+      bestDelim = delimiter;
     }
   }
 
   if (bestScore <= 0) {
-    return ",";
+    return COMMA;
   }
 
   return bestDelim;
@@ -176,7 +198,7 @@ function isCommaInNumber(
 
   const beforeComma = currentCell;
 
-  if (beforeComma.includes(",")) {
+  if (beforeComma.includes(COMMA)) {
     const lastDigitGroup = /\d{3}$/.exec(beforeComma);
 
     if (!lastDigitGroup) {
@@ -193,7 +215,7 @@ function isCommaInNumber(
   return true;
 }
 
-type EmptyValue = null | string;
+export type EmptyValue = null | string;
 
 /**
  * Options for `parse`.
@@ -256,13 +278,13 @@ export function parse<E extends EmptyValue = null>(
   const rows = clipboardText.split(/\r?\n/);
   const delimiter = detectDelimiterFromLines(rows);
 
-  if (delimiter === "\t") {
+  if (delimiter === TAB) {
     const result: (E | string)[][] = [];
 
     for (const row of rows) {
       if (skipEmptyRows && !row.trim()) continue;
 
-      const cells = row.split("\t");
+      const cells = row.split(TAB);
       const processedCells = cells.map((cell) => {
         const trimmedCell = trim ? cell.trim() : cell;
 
@@ -296,7 +318,7 @@ export function parse<E extends EmptyValue = null>(
           insideQuotes = !insideQuotes;
         }
       } else if (char === delimiter && !insideQuotes) {
-        if (delimiter === "," && isCommaInNumber(row, i, currentCell)) {
+        if (delimiter === COMMA && isCommaInNumber(row, i, currentCell)) {
           currentCell += char;
         } else {
           const trimmedCell = trim ? currentCell.trim() : currentCell;
