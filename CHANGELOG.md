@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/jimmy-guzman/cliptabular/compare/v1.1.0...v1.1.1) (2025-11-14)
+
+
+### Bug Fixes
+
+* 🐛 make types accurate w/ `skipEmptyCells` option ([#5](https://github.com/jimmy-guzman/cliptabular/issues/5)) ([7f47f8d](https://github.com/jimmy-guzman/cliptabular/commit/7f47f8dfb35aaeea777b44bfee908bf9fc368a92))
+
 # [1.1.0](https://github.com/jimmy-guzman/cliptabular/compare/v1.0.1...v1.1.0) (2025-11-14)
 
 
