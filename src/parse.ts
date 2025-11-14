@@ -271,17 +271,15 @@ export interface ParseOptions<E = null> {
  * - Preserves numeric commas (currency, thousands separators, percentages)
  *   when comma is the delimiter.
  *
- * @template E Optional empty cell value type (`null` by default).
- *
  * @param clipboardText Raw clipboard text (e.g. from Excel / CSV copy-paste).
  *
  * @param options Parsing behavior configuration with skipEmptyCells enabled.
  *
  * @returns A 2D array of string cells (empty cells are filtered out).
  */
-export function parse(
+export function parse<E = null>(
   clipboardText: string,
-  options: ParseOptions<never> & { skipEmptyCells: true },
+  options: ParseOptions<E> & { skipEmptyCells: true },
 ): string[][];
 
 /**

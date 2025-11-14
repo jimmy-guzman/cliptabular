@@ -89,4 +89,14 @@ describe("parse emptyValue type inference", () => {
     expectTypeOf(result).toEqualTypeOf<string[][]>();
     assertType<string[][]>(result);
   });
+
+  test("should infer string[][] when skipEmptyCells is true with numeric emptyValue", () => {
+    const result = parse("A,,C\n,B,", {
+      emptyValue: 0,
+      skipEmptyCells: true,
+    });
+
+    expectTypeOf(result).toEqualTypeOf<string[][]>();
+    assertType<string[][]>(result);
+  });
 });
