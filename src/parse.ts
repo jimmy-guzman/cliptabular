@@ -52,7 +52,7 @@ function isCommaInNumber(
 
 type EmptyValue = null | string;
 
-interface ParseOptions<E extends EmptyValue = null> {
+export interface ParseOptions<E extends EmptyValue = null> {
   /** Value to use for empty cells (default: null). */
   emptyValue?: E;
   /** Whether to skip empty rows. */
