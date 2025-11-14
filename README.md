@@ -13,7 +13,7 @@
 ## Features
 
 - **Smart delimiter detection** (tabs, commas, semicolons, pipes, spaces, etc.)
-- Prefers Excel’s tab-delimited format automatically
+- Prefers Excel's tab-delimited format automatically
 - Ignores delimiters inside quotes
 - Handles quoted fields (`"Smith, John"`)
 - Handles escaped quotes (`""Hello""`)
@@ -98,6 +98,9 @@ export interface ParseOptions<E = null> {
    * Pads shorter rows with `emptyValue` so all rows have the same number
    * of columns. Makes the output rectangular.
    *
+   * Note: If combined with `skipEmptyCells`, skipEmptyCells takes precedence
+   * and padding will not occur.
+   *
    * @default false
    */
   padRows?: boolean;
@@ -108,6 +111,17 @@ export interface ParseOptions<E = null> {
    * a single-cell row containing the `emptyValue`.
    */
   skipEmptyRows?: boolean;
+  /**
+   * Whether to skip empty cells within each row.
+   *
+   * When `true`, cells containing `emptyValue` are filtered out after trimming.
+   * This can result in rows of varying lengths.
+   *
+   * Note: If combined with `padRows`, skipEmptyCells takes precedence.
+   *
+   * @default false
+   */
+  skipEmptyCells?: boolean;
   /**
    * Whether to trim whitespace from each cell.
    *
@@ -183,6 +197,13 @@ parse("A,B\n\nC,D", { skipEmptyRows: true });
 // [["A","B"],["C","D"]]
 ```
 
+### Skip empty cells
+
+```ts
+parse("A,,C\n,B,", { skipEmptyCells: true });
+// [["A","C"],["B"]]
+```
+
 ### Pad rows
 
 ```ts
@@ -193,6 +214,19 @@ parse("A,B\nC", { padRows: true });
 ```ts
 parse("A,B\nC", { padRows: true, emptyValue: "EMPTY" });
 // [["A","B"],["C","EMPTY"]]
+```
+
+### Clean sparse data
+
+```ts
+parse("Name,,,Age,,,City\nAlice,,,30,,,\n,,,25,,,Boston", {
+  skipEmptyCells: true,
+});
+// [
+//   ["Name", "Age", "City"],
+//   ["Alice", "30"],
+//   ["25", "Boston"]
+// ]
 ```
 
 ---
