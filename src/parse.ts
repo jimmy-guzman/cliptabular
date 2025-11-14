@@ -189,13 +189,18 @@ function isCommaInNumber(
   currentCell: string,
 ) {
   const afterComma = text.slice(commaIndex + 1);
-  const afterMatch = /^\d{3}(?=[,.%\s]|$)/.exec(afterComma);
+  const immediateAfterMatch = /^\d{3}(?=[,.%\s]|$)/.exec(afterComma);
+  const spacedAfterMatch = /^\s+\d{3}(?=[,.%\s]|$)/.exec(afterComma);
 
-  if (!afterMatch) {
+  if (!immediateAfterMatch && !spacedAfterMatch) {
     return false;
   }
 
-  const beforeComma = currentCell;
+  const beforeComma = currentCell.trim();
+
+  if (spacedAfterMatch && !beforeComma.includes(COMMA)) {
+    return false;
+  }
 
   if (beforeComma.includes(COMMA)) {
     const lastDigitGroup = /\d{3}$/.exec(beforeComma);

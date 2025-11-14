@@ -1555,4 +1555,16 @@ describe("parse", () => {
       ]);
     });
   });
+
+  describe("Bugs", () => {
+    it("should parse values of varying lengths with and without commas", () => {
+      const input = "1000, 22,000, 3,500\n4, 500,000,000, 60, 70000";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["1000", "22,000", "3,500"],
+        ["4", "500,000,000", "60", "70000"],
+      ]);
+    });
+  });
 });
