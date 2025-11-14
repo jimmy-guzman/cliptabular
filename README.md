@@ -203,6 +203,6 @@ parse("A,B\nC", { padRows: true, emptyValue: "EMPTY" });
 [downloads-badge]: https://flat.badgen.net/npm/dm/cliptabular?icon=npm
 [npmtrends]: https://www.npmtrends.com/cliptabular
 [license]: https://github.com/jimmy-guzman/cliptabular/blob/master/LICENSE
-[license-badge]: https://flat.badgen.net/github/license/jimmy-guzman/cliptabular?icon=packagephobia
+[license-badge]: https://flat.badgen.net/github/license/jimmy-guzman/cliptabular?icon=github
 [packagephobia]: https://packagephobia.com/result?p=cliptabular
 [install-size-badge]: https://flat.badgen.net/packagephobia/install/cliptabular?icon=packagephobia
