@@ -1,6 +1,134 @@
 import { parse } from "./parse";
 
 describe("parse", () => {
+  describe("Line ending handling", () => {
+    it("should handle Unix line endings (LF)", () => {
+      const input = "A\tB\nC\tD\nE\tF";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+        ["E", "F"],
+      ]);
+    });
+
+    it("should handle Windows line endings (CRLF)", () => {
+      const input = "A\tB\r\nC\tD\r\nE\tF";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+        ["E", "F"],
+      ]);
+    });
+
+    it("should handle legacy Mac line endings (CR)", () => {
+      const input = "A\tB\rC\tD\rE\tF";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+        ["E", "F"],
+      ]);
+    });
+
+    it("should handle mixed line endings", () => {
+      const input = "A\tB\r\nC\tD\nE\tF\rG\tH";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+        ["E", "F"],
+        ["G", "H"],
+      ]);
+    });
+
+    it("should handle CSV with Unix line endings (LF)", () => {
+      const input = "Name,Age\nJohn,30\nJane,25";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Age"],
+        ["John", "30"],
+        ["Jane", "25"],
+      ]);
+    });
+
+    it("should handle CSV with Windows line endings (CRLF)", () => {
+      const input = "Name,Age\r\nJohn,30\r\nJane,25";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Age"],
+        ["John", "30"],
+        ["Jane", "25"],
+      ]);
+    });
+
+    it("should handle CSV with legacy Mac line endings (CR)", () => {
+      const input = "Name,Age\rJohn,30\rJane,25";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Age"],
+        ["John", "30"],
+        ["Jane", "25"],
+      ]);
+    });
+
+    it("should handle empty lines with different line endings", () => {
+      const input = "A,B\r\n\r\nC,D\n\nE,F\r\rG,H";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        [null],
+        ["C", "D"],
+        [null],
+        ["E", "F"],
+        [null],
+        ["G", "H"],
+      ]);
+    });
+
+    it("should handle trailing line ending (CRLF)", () => {
+      const input = "A,B\r\nC,D\r\n";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["A", "B"], ["C", "D"], [null]]);
+    });
+
+    it("should handle trailing line ending (LF)", () => {
+      const input = "A,B\nC,D\n";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["A", "B"], ["C", "D"], [null]]);
+    });
+
+    it("should handle trailing line ending (CR)", () => {
+      const input = "A,B\rC,D\r";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["A", "B"], ["C", "D"], [null]]);
+    });
+
+    it("should skip empty rows with mixed line endings when skipEmptyRows is true", () => {
+      const input = "A,B\r\n\r\nC,D\n\nE,F\r\rG,H";
+      const result = parse(input, { skipEmptyRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+        ["E", "F"],
+        ["G", "H"],
+      ]);
+    });
+  });
+
   describe("Excel (tab-delimited) parsing", () => {
     it("should parse simple tab-delimited data", () => {
       const input = "Name\tAge\tCity\nJohn\t30\tNew York\nJane\t25\tBoston";
@@ -30,16 +158,6 @@ describe("parse", () => {
       expect(result).toStrictEqual([
         ["A", "", "C"],
         ["", "B", ""],
-      ]);
-    });
-
-    it("should handle Windows line endings (CRLF)", () => {
-      const input = "A\tB\r\nC\tD";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([
-        ["A", "B"],
-        ["C", "D"],
       ]);
     });
 

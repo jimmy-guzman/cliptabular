@@ -275,7 +275,7 @@ export function parse<E extends EmptyValue = null>(
     return [];
   }
 
-  const rows = clipboardText.split(/\r?\n/);
+  const rows = clipboardText.split(/\r\n|\r|\n/);
   const delimiter = detectDelimiterFromLines(rows);
 
   if (delimiter === TAB) {
