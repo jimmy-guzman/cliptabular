@@ -1,6 +1,6 @@
 import { parse } from "./parse";
 
-describe("parseSmart", () => {
+describe("parse", () => {
   describe("Excel (tab-delimited) parsing", () => {
     it("should parse simple tab-delimited data", () => {
       const input = "Name\tAge\tCity\nJohn\t30\tNew York\nJane\t25\tBoston";
