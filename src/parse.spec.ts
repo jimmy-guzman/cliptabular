@@ -525,6 +525,27 @@ describe("parse", () => {
       ]);
     });
 
+    it("should use undefined when configured", () => {
+      const input = "A,,C\n,B,";
+      const result = parse(input, { emptyValue: undefined });
+
+      expect(result).toStrictEqual([
+        ["A", undefined, "C"],
+        [undefined, "B", undefined],
+      ]);
+    });
+
+    it("should use Symbol when configured", () => {
+      const input = "A,,C\n,B,";
+      const EMPTY = Symbol("empty");
+      const result = parse(input, { emptyValue: EMPTY });
+
+      expect(result).toStrictEqual([
+        ["A", EMPTY, "C"],
+        [EMPTY, "B", EMPTY],
+      ]);
+    });
+
     it("should use custom string as empty value", () => {
       const input = "A,,C\n,B,";
       const result = parse(input, { emptyValue: "N/A" });
@@ -1183,6 +1204,298 @@ describe("parse", () => {
       expect(tabResult).toStrictEqual([
         ["A", "N/A", "C"],
         ["D", "E", "N/A"],
+      ]);
+    });
+  });
+
+  describe("padRows option", () => {
+    it("should pad shorter rows with null by default", () => {
+      const input = "A,B,C\nD,E\nF";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", null],
+        ["F", null, null],
+      ]);
+    });
+
+    it("should pad with custom empty value", () => {
+      const input = "A,B,C\nD\nE,F";
+      const result = parse(input, { emptyValue: "", padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "", ""],
+        ["E", "F", ""],
+      ]);
+    });
+
+    it("should not pad when padRows is false", () => {
+      const input = "A,B,C\nD,E\nF";
+      const result = parse(input, { padRows: false });
+
+      expect(result).toStrictEqual([["A", "B", "C"], ["D", "E"], ["F"]]);
+    });
+
+    it("should not pad when padRows is omitted (default false)", () => {
+      const input = "A,B,C\nD,E\nF";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["A", "B", "C"], ["D", "E"], ["F"]]);
+    });
+
+    it("should pad tab-delimited data", () => {
+      const input = "A\tB\tC\nD\tE\nF";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", null],
+        ["F", null, null],
+      ]);
+    });
+
+    it("should pad semicolon-delimited data", () => {
+      const input = "A;B;C;D\nE;F\nG;H;I";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C", "D"],
+        ["E", "F", null, null],
+        ["G", "H", "I", null],
+      ]);
+    });
+
+    it("should handle all rows having the same length", () => {
+      const input = "A,B,C\nD,E,F\nG,H,I";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", "F"],
+        ["G", "H", "I"],
+      ]);
+    });
+
+    it("should handle single row", () => {
+      const input = "A,B,C";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([["A", "B", "C"]]);
+    });
+
+    it("should handle empty input with padRows", () => {
+      const input = "";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([]);
+    });
+
+    it("should pad rows with skipEmptyRows enabled", () => {
+      const input = "A,B,C\n\nD,E\n\nF";
+      const result = parse(input, { padRows: true, skipEmptyRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", null],
+        ["F", null, null],
+      ]);
+    });
+
+    it("should pad with custom empty value and skip empty rows", () => {
+      const input = "A,B,C\n\nD\n\nE,F";
+      const result = parse(input, {
+        emptyValue: "N/A",
+        padRows: true,
+        skipEmptyRows: true,
+      });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "N/A", "N/A"],
+        ["E", "F", "N/A"],
+      ]);
+    });
+
+    it("should pad rows with existing empty cells", () => {
+      const input = "A,,C,D\n,B\nE,F,G";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", null, "C", "D"],
+        [null, "B", null, null],
+        ["E", "F", "G", null],
+      ]);
+    });
+
+    it("should pad with trim enabled", () => {
+      const input = "  A  ,  B  ,  C  \n  D  \n  E  ,  F  ";
+      const result = parse(input, { padRows: true, trim: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", null, null],
+        ["E", "F", null],
+      ]);
+    });
+
+    it("should pad with trim disabled", () => {
+      const input = "  A  ,  B  ,  C  \n  D  \n  E  ,  F  ";
+      const result = parse(input, { padRows: true, trim: false });
+
+      expect(result).toStrictEqual([
+        ["  A  ", "  B  ", "  C  "],
+        ["  D  ", null, null],
+        ["  E  ", "  F  ", null],
+      ]);
+    });
+
+    it("should pad rows with quoted values", () => {
+      const input = '"A","B","C"\n"D"\n"E","F"';
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", null, null],
+        ["E", "F", null],
+      ]);
+    });
+
+    it("should pad rows with numeric commas", () => {
+      const input = "Name,Amount,Status\nJohn,$1,234.56,Active\nJane,$2,345.67";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["Name", "Amount", "Status"],
+        ["John", "$1,234.56", "Active"],
+        ["Jane", "$2,345.67", null],
+      ]);
+    });
+
+    it("should handle very uneven row lengths", () => {
+      const input = "A,B,C,D,E,F\nG\nH,I,J\nK,L";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C", "D", "E", "F"],
+        ["G", null, null, null, null, null],
+        ["H", "I", "J", null, null, null],
+        ["K", "L", null, null, null, null],
+      ]);
+    });
+
+    it("should pad when longest row is in the middle", () => {
+      const input = "A,B\nC,D,E,F,G\nH,I";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", null, null, null],
+        ["C", "D", "E", "F", "G"],
+        ["H", "I", null, null, null],
+      ]);
+    });
+
+    it("should pad when longest row is at the end", () => {
+      const input = "A\nB,C\nD,E,F,G,H";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", null, null, null, null],
+        ["B", "C", null, null, null],
+        ["D", "E", "F", "G", "H"],
+      ]);
+    });
+
+    it("should work with all options combined", () => {
+      const input = "  A  ,  B  ,  C  \n\n  D  \n\n  E  ,  F  ";
+      const result = parse(input, {
+        emptyValue: "MISSING",
+        padRows: true,
+        skipEmptyRows: true,
+        trim: true,
+      });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "MISSING", "MISSING"],
+        ["E", "F", "MISSING"],
+      ]);
+    });
+
+    it("should pad pipe-delimited data", () => {
+      const input = "A|B|C|D\nE|F\nG";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C", "D"],
+        ["E", "F", null, null],
+        ["G", null, null, null],
+      ]);
+    });
+
+    it("should pad space-delimited data", () => {
+      const input = "A B C D\nE F\nG";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C", "D"],
+        ["E", "F", null, null],
+        ["G", null, null, null],
+      ]);
+    });
+
+    it("should maintain rectangular shape for table-like data", () => {
+      const input =
+        "Name,Age,City,Country\nAlice,30\nBob,25,Boston\nCharlie,35,Chicago,USA";
+      const result = parse(input, { padRows: true });
+
+      expect(result).toStrictEqual([
+        ["Name", "Age", "City", "Country"],
+        ["Alice", "30", null, null],
+        ["Bob", "25", "Boston", null],
+        ["Charlie", "35", "Chicago", "USA"],
+      ]);
+    });
+
+    it("should pad with unicode empty value", () => {
+      const input = "A,B,C\nD\nE,F";
+      const result = parse(input, { emptyValue: "—", padRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "—", "—"],
+        ["E", "F", "—"],
+      ]);
+    });
+
+    it("should pad correctly with many columns", () => {
+      const fullRow = Array.from({ length: 20 }, (_, i) => `Col${i}`).join(",");
+      const shortRow = "A,B,C";
+      const input = `${fullRow}\n${shortRow}`;
+      const result = parse(input, { padRows: true });
+
+      expect(result[0]).toHaveLength(20);
+      expect(result[1]).toHaveLength(20);
+      expect(result[1]?.[0]).toBe("A");
+      expect(result[1]?.[1]).toBe("B");
+      expect(result[1]?.[2]).toBe("C");
+      expect(result[1]?.[3]).toBeNull();
+      expect(result[1]?.[19]).toBeNull();
+    });
+
+    it("should pad consistently in tab and CSV format", () => {
+      const tabInput = "A\tB\tC\nD\tE\nF";
+      const csvInput = "A,B,C\nD,E\nF";
+
+      const tabResult = parse(tabInput, { padRows: true });
+      const csvResult = parse(csvInput, { padRows: true });
+
+      expect(tabResult).toStrictEqual(csvResult);
+      expect(tabResult).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", null],
+        ["F", null, null],
       ]);
     });
   });

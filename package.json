@@ -31,7 +31,7 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "coverage": "vitest run --coverage",
+    "coverage": "vitest run --typecheck --coverage",
     "dev": "tsdown --watch",
     "format": "prettier --check --cache --experimental-cli .",
     "format:fix": "prettier --write --cache --experimental-cli .",
@@ -40,7 +40,7 @@
     "lint:fix": "pnpm lint --fix",
     "prepack": "pnpm build && clean-pkg-json",
     "prepare": "is-ci || lefthook install",
-    "test": "vitest",
+    "test": "vitest --typecheck",
     "typecheck": "tsc"
   },
   "prettier": "@jimmy.codes/prettier-config",

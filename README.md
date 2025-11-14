@@ -81,14 +81,37 @@ parse("A,,B", { emptyValue: "EMPTY" as const });
 ## Options
 
 ```ts
-type EmptyValue = null | string;
-
-interface ParseOptions<E extends EmptyValue = null> {
-  /** Value to use for empty cells (default: null). */
+/**
+ * Options for `parse`.
+ *
+ * @template E Optional empty cell value type (`null` by default).
+ */
+export interface ParseOptions<E = null> {
+  /**
+   * Value to use for empty cells.
+   *
+   * @default null
+   */
   emptyValue?: E;
-  /** Whether to skip empty rows. */
+  /**
+   * Pads shorter rows with `emptyValue` so all rows have the same number
+   * of columns. Makes the output rectangular.
+   *
+   * @default false
+   */
+  padRows?: boolean;
+  /**
+   * Whether to skip empty rows entirely.
+   *
+   * Defaults to `false`. When `false`, empty rows are represented as
+   * a single-cell row containing the `emptyValue`.
+   */
   skipEmptyRows?: boolean;
-  /** Whether to trim whitespace from cells. */
+  /**
+   * Whether to trim whitespace from each cell.
+   *
+   * @default true
+   */
   trim?: boolean;
 }
 ```
@@ -159,19 +182,17 @@ parse("A,B\n\nC,D", { skipEmptyRows: true });
 // [["A","B"],["C","D"]]
 ```
 
----
+### Pad rows
 
-## API
+```ts
+parse("A,B\nC", { padRows: true });
+// [["A","B"],["C",null]]
+```
 
-### `parse<E>(text: string, options?: ParseOptions<E>): (string | E)[][]`
-
-### `ParseOptions`
-
-| Option          | Type             | Default |
-| --------------- | ---------------- | ------- |
-| `emptyValue`    | `null \| string` | `null`  |
-| `skipEmptyRows` | `boolean`        | `false` |
-| `trim`          | `boolean`        | `true`  |
+```ts
+parse("A,B\nC", { padRows: true, emptyValue: "EMPTY" });
+// [["A","B"],["C","EMPTY"]]
+```
 
 ---
 

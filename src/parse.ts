@@ -93,7 +93,6 @@ function detectDelimiterFromLines(lines: string[]): Delimiter | typeof COMMA {
     return COMMA;
   }
 
-  // Hard preference for tabs when they appear outside quotes (Excel / TSV fast-path)
   for (const line of sample) {
     if (countDelimiterOutsideQuotes(line, TAB) > 0) {
       return TAB;
@@ -215,20 +214,25 @@ function isCommaInNumber(
   return true;
 }
 
-export type EmptyValue = null | string;
-
 /**
  * Options for `parse`.
  *
  * @template E Optional empty cell value type (`null` by default).
  */
-export interface ParseOptions<E extends EmptyValue = null> {
+export interface ParseOptions<E = null> {
   /**
    * Value to use for empty cells.
    *
-   * Defaults to `null`. Changing this will update the inferred return type.
+   * @default null
    */
-  emptyValue?: E;
+  emptyValue?: E | undefined;
+  /**
+   * Pads shorter rows with `emptyValue` so all rows have the same number
+   * of columns. Makes the output rectangular.
+   *
+   * @default false
+   */
+  padRows?: boolean;
   /**
    * Whether to skip empty rows entirely.
    *
@@ -239,7 +243,7 @@ export interface ParseOptions<E extends EmptyValue = null> {
   /**
    * Whether to trim whitespace from each cell.
    *
-   * Defaults to `true`.
+   * @default true
    */
   trim?: boolean;
 }
@@ -261,15 +265,21 @@ export interface ParseOptions<E extends EmptyValue = null> {
  *
  * @returns A 2D array of cells, with empty cells mapped to `emptyValue`.
  */
-export function parse<E extends EmptyValue = null>(
+export function parse<E = null>(
   clipboardText: string,
   options: ParseOptions<E> = {},
 ): (E | string)[][] {
   const {
     emptyValue = null as E,
+    padRows = false,
     skipEmptyRows = false,
     trim = true,
   } = options;
+
+  // Handle explicit undefined vs missing emptyValue
+  const emptyVal = Object.prototype.hasOwnProperty.call(options, "emptyValue")
+    ? options.emptyValue
+    : emptyValue;
 
   if (!clipboardText) {
     return [];
@@ -288,10 +298,20 @@ export function parse<E extends EmptyValue = null>(
       const processedCells = cells.map((cell) => {
         const trimmedCell = trim ? cell.trim() : cell;
 
-        return trimmedCell === "" ? emptyValue : trimmedCell;
-      });
+        return trimmedCell === "" ? emptyVal : trimmedCell;
+      }) as (E | string)[];
 
       result.push(processedCells);
+    }
+
+    if (padRows && result.length > 0) {
+      const maxColumns = Math.max(...result.map((row) => row.length));
+
+      for (const row of result) {
+        while (row.length < maxColumns) {
+          row.push(emptyVal as E);
+        }
+      }
     }
 
     return result;
@@ -323,7 +343,7 @@ export function parse<E extends EmptyValue = null>(
         } else {
           const trimmedCell = trim ? currentCell.trim() : currentCell;
 
-          cells.push(trimmedCell === "" ? emptyValue : trimmedCell);
+          cells.push(trimmedCell === "" ? (emptyVal as E) : trimmedCell);
           currentCell = "";
         }
       } else {
@@ -334,8 +354,18 @@ export function parse<E extends EmptyValue = null>(
 
     const trimmedCell = trim ? currentCell.trim() : currentCell;
 
-    cells.push(trimmedCell === "" ? emptyValue : trimmedCell);
+    cells.push(trimmedCell === "" ? (emptyVal as E) : trimmedCell);
     result.push(cells);
+  }
+
+  if (padRows && result.length > 0) {
+    const maxColumns = Math.max(...result.map((row) => row.length));
+
+    for (const row of result) {
+      while (row.length < maxColumns) {
+        row.push(emptyVal as E);
+      }
+    }
   }
 
   return result;
