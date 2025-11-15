@@ -257,10 +257,10 @@ describe("Real-World Scenarios", () => {
   const financialData = Array.from({ length: 250 }, (_, i) => {
     return [
       `2024-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}`,
-      `$${(i * 1000).toLocaleString()}.${String(i % 100).padStart(2, "0")}`,
+      `$${i * 1000}.${String(i % 100).padStart(2, "0")}`,
       `Transaction ${i}`,
       i % 2 === 0 ? "Credit" : "Debit",
-      `$${((i * 500) % 10_000).toLocaleString()}.00`,
+      `$${(i * 500) % 10_000}.00`,
     ].join(",");
   }).join("\n");
 
