@@ -317,6 +317,15 @@ export function parse<E = null>(
   }
 
   const rows = clipboardText.split(/\r\n|\r|\n/);
+
+  if (!skipEmptyCells && rows.length === 2 && rows.every((row) => row === "")) {
+    if (skipEmptyRows) {
+      return [];
+    }
+
+    return [[emptyVal as E]];
+  }
+
   const delimiter = detectDelimiterFromLines(rows);
 
   if (delimiter === "\t") {
