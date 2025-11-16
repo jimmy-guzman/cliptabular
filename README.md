@@ -1,6 +1,6 @@
 # cliptabular 📋➡️📊
 
-> Parse clipboard data from Excel, CSV, and other delimited formats into clean rows. Handles tabs, commas, semicolons, pipes, quoted fields, currency, percentages, negative numbers, and the messy reality of spreadsheet copy/paste.
+> Parse clipboard data from Excel, CSV, and other delimited formats into clean rows. Handles tabs, commas, quotes, currency, percentages, negative numbers, and the messy reality of spreadsheet copy/paste.
 
 ![actions][actions-badge]
 [![version][version-badge]][package]
@@ -12,18 +12,14 @@
 
 ## Features
 
-- **Smart delimiter detection** (tabs, commas, semicolons, pipes, spaces, etc.)
-- Prefers Excel's tab-delimited format automatically
+- **Smart delimiter detection** (tabs, commas, semicolons, pipes, spaces)
+- Automatically prefers Excel’s **tab-delimited** format
 - Ignores delimiters inside quotes
-- Handles quoted fields (`"Smith, John"`)
-- Handles escaped quotes (`""Hello""`)
-- Handles numbers with grouping (`1,234.56`)
-- Handles currency (`$1,234.56`, `€9,876.54`, `£3,456`, `¥4,567`)
-- Handles negative values (`-1,234.56`, `-$99.00`)
-- Handles percentages (`15.5%`, `1,234.56%`)
-- Handles empty cells and fully empty rows
-- Consistent behavior across Excel and CSV
-- Zero dependencies
+- Handles quoted fields and escaped quotes
+- Supports numeric grouping, currency, negatives, and percentages
+- Handles empty cells and empty rows
+- Consistent results across clipboard sources
+- **Zero dependencies**
 
 ---
 
@@ -35,8 +31,6 @@ npm install cliptabular
 pnpm add cliptabular
 ```
 
----
-
 ## Usage
 
 ```ts
@@ -46,25 +40,49 @@ const text = await navigator.clipboard.readText();
 const rows = parse(text);
 ```
 
+Depending on what was pasted, `parse(...)` adapts automatically:
+
+```ts
+// Excel (tab-delimited)
+parse("Name\tAge\tCity\nJohn\t30\tNew York");
+// => [["Name","Age","City"],["John","30","New York"]]
+```
+
+```ts
+// CSV with quoted commas
+parse('"Smith, John","New York, NY"');
+// => [["Smith, John", "New York, NY"]]
+```
+
+```ts
+// Mixed numeric + currency — commas stay *inside* the value
+parse("Item,Price\nWidget,$1,234.56");
+// => [["Item","Price"],["Widget","$1,234.56"]]
+```
+
+```ts
+// Empty cells become `null` by default
+parse("A,,C");
+// => [["A", null, "C"]]
+```
+
+`parse` automatically chooses the right delimiter, ignores delimiters inside quotes, and preserves numeric grouping when comma is part of a number.
+
 ---
 
 ## Delimiter Detection
 
-`parse` automatically figures out the correct delimiter by analyzing the first lines of clipboard text.
+`parse` automatically chooses the delimiter by analyzing the first lines of clipboard text:
 
-It:
-
-- prefers **tabs** when present (Excel copy/paste)
-- detects **commas**, **semicolons**, **pipes**, **spaces**, and more
-- ignores delimiters **inside quotes**
-- uses headers to improve accuracy
-- falls back to **comma** when no structure is detected
+- tabs (Excel) take priority
+- commas, semicolons, pipes, and spaces detected as needed
+- delimiters inside quotes are ignored
+- header-shaped rows improve accuracy
+- safe fallback to **comma**
 
 ---
 
 ## Return Type
-
-The return type depends on the `emptyValue` option (`null` by default).
 
 ```ts
 parse("A,,B");
@@ -73,7 +91,7 @@ parse("A,,B");
 parse("A,,B", { emptyValue: "" });
 // => string[][]
 
-parse("A,,B", { emptyValue: "EMPTY" as const });
+parse("A,,B", { emptyValue: "EMPTY" });
 // => (string | "EMPTY")[][]
 ```
 
@@ -81,155 +99,65 @@ parse("A,,B", { emptyValue: "EMPTY" as const });
 
 ## Options
 
-```ts
-/**
- * Options for `parse`.
- *
- * @template E Optional empty cell value type (`null` by default).
- */
-export interface ParseOptions<E = null> {
-  /**
-   * Value to use for empty cells.
-   *
-   * @default null
-   */
-  emptyValue?: E;
-  /**
-   * Pads shorter rows with `emptyValue` so all rows have the same number
-   * of columns. Makes the output rectangular.
-   *
-   * Note: If combined with `skipEmptyCells`, skipEmptyCells takes precedence
-   * and padding will not occur.
-   *
-   * @default false
-   */
-  padRows?: boolean;
-  /**
-   * Whether to skip empty rows entirely.
-   *
-   * Defaults to `false`. When `false`, empty rows are represented as
-   * a single-cell row containing the `emptyValue`.
-   */
-  skipEmptyRows?: boolean;
-  /**
-   * Whether to skip empty cells within each row.
-   *
-   * When `true`, cells containing `emptyValue` are filtered out after trimming.
-   * This can result in rows of varying lengths.
-   *
-   * Note: If combined with `padRows`, skipEmptyCells takes precedence.
-   *
-   * @default false
-   */
-  skipEmptyCells?: boolean;
-  /**
-   * Whether to trim whitespace from each cell.
-   *
-   * @default true
-   */
-  trim?: boolean;
-}
-```
+### `emptyValue`
 
-### Example
+Value used when a cell is empty.
+Default: **`null`**
 
 ```ts
-parse("A,,C\n,B,", { emptyValue: "N/A" });
-// [
-//   ["A", "N/A", "C"],
-//   ["N/A", "B", "N/A"]
-// ]
+parse("A,,C", { emptyValue: "N/A" });
+// => [["A", "N/A", "C"]]
 ```
 
 ---
 
-## Examples
+### `padRows`
 
-### Excel (tab-delimited)
-
-```ts
-parse("Name\tAge\tCity\nJohn\t30\tNew York");
-// [
-//   ["Name", "Age", "City"],
-//   ["John", "30", "New York"]
-// ]
-```
-
-### CSV with commas inside quotes
-
-```ts
-parse('"Smith, John","New York, NY"');
-// [["Smith, John", "New York, NY"]]
-```
-
-### Currency and numbers
-
-```ts
-parse("Item,Price\nWidget,$1,234.56");
-// [
-//   ["Item", "Price"],
-//   ["Widget", "$1,234.56"]
-// ]
-```
-
-### Percentages
-
-```ts
-parse("Rate\n15.5%\n1,234.56%");
-// [
-//   ["Rate"],
-//   ["15.5%"],
-//   ["1,234.56%"]
-// ]
-```
-
-### Empty values
-
-```ts
-parse("A,,C");
-// [["A", null, "C"]]
-```
-
-### Skip empty rows
-
-```ts
-parse("A,B\n\nC,D", { skipEmptyRows: true });
-// [["A","B"],["C","D"]]
-```
-
-### Skip empty cells
-
-```ts
-parse("A,,C\n,B,", { skipEmptyCells: true });
-// [["A","C"],["B"]]
-```
-
-### Pad rows
+Pads all rows to the same number of columns using `emptyValue`.
+Useful when you want a guaranteed rectangular matrix.
+Default: **`false`**
 
 ```ts
 parse("A,B\nC", { padRows: true });
-// [["A","B"],["C",null]]
-```
-
-```ts
-parse("A,B\nC", { padRows: true, emptyValue: "EMPTY" });
-// [["A","B"],["C","EMPTY"]]
-```
-
-### Clean sparse data
-
-```ts
-parse("Name,,,Age,,,City\nAlice,,,30,,,\n,,,25,,,Boston", {
-  skipEmptyCells: true,
-});
-// [
-//   ["Name", "Age", "City"],
-//   ["Alice", "30"],
-//   ["25", "Boston"]
-// ]
+// => [["A","B"],["C",null]]
 ```
 
 ---
+
+### `skipEmptyRows`
+
+Drops fully empty rows instead of representing them as `[emptyValue]`.
+Default: **`false`**
+
+```ts
+parse("A,B\n\nC,D", { skipEmptyRows: true });
+// => [["A","B"],["C","D"]]
+```
+
+---
+
+### `skipEmptyCells`
+
+Removes empty cells within rows (after trimming).
+Takes precedence over `padRows`.
+Default: **`false`**
+
+```ts
+parse("A,,C\n,B,", { skipEmptyCells: true });
+// => [["A","C"],["B"]]
+```
+
+---
+
+### `trim`
+
+Removes leading/trailing whitespace from each cell.
+Default: **`true`**
+
+```ts
+parse("  A  ,  B  ", { trim: true });
+// => [["A", "B"]]
+```
 
 [actions-badge]: https://flat.badgen.net/github/checks/jimmy-guzman/cliptabular/main?icon=github
 [version-badge]: https://flat.badgen.net/npm/v/cliptabular?icon=npm
