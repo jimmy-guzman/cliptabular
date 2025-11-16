@@ -83,7 +83,7 @@ function createStats() {
  * - Ignores delimiters that appear only inside quotes.
  * - Falls back to comma when no strong candidate is found.
  */
-function detectDelimiterFromLines(lines: string[]): "," | Delimiter {
+function detectDelimiterFromLines(lines: string[]) {
   const sample = lines.slice(0, 20).filter((line) => line.length > 0);
 
   if (sample.length === 0) {
@@ -197,12 +197,12 @@ function isCommaInNumber(
   const spacedAfterMatch =
     !immediateAfterMatch && /^\s+\d{3}(?=[,.%\s]|$)/.test(afterComma);
 
-  if (!immediateAfterMatch && !spacedAfterMatch) return false;
+  if (spacedAfterMatch) return false;
+
+  if (!immediateAfterMatch) return false;
 
   const beforeComma = currentCell.trim();
   const hasComma = beforeComma.includes(",");
-
-  if (spacedAfterMatch && !hasComma) return false;
 
   if (hasComma) {
     return /\d{3}$/.test(beforeComma);

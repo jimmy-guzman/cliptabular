@@ -452,6 +452,14 @@ describe("parse", () => {
 
       expect(result).toStrictEqual([["A1", "234", "ok"]]);
     });
+
+    it("should not treat commas followed by space as numeric grouping, even after a grouped number", () => {
+      const input = "1,234, 567,ok";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["1,234", "567", "ok"]]);
+    });
   });
 
   describe("Comma splitting (invalid number patterns)", () => {
