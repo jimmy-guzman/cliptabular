@@ -1,3 +1,11 @@
+## [1.1.2](https://github.com/jimmy-guzman/cliptabular/compare/v1.1.1...v1.1.2) (2025-11-16)
+
+
+### Bug Fixes
+
+* 🐛 handle single empty line correctly ([af8e8db](https://github.com/jimmy-guzman/cliptabular/commit/af8e8db4fb9fc646d6f87ab9005a217382b353c1))
+* 🐛 should treat commans followed by space ([4147f60](https://github.com/jimmy-guzman/cliptabular/commit/4147f6001247bb7b0353c532f10708358d3d5f11))
+
 ## [1.1.1](https://github.com/jimmy-guzman/cliptabular/compare/v1.1.0...v1.1.1) (2025-11-14)
 
 
