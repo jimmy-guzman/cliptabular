@@ -1,9 +1,6 @@
-const TAB = "\t";
-const COMMA = ",";
-
 const DELIMITERS_ENTRIES = [
-  [TAB, 10],
-  [COMMA, 8],
+  ["\t", 10],
+  [",", 8],
   [";", 4],
   ["|", 3],
   [" ", 1],
@@ -56,7 +53,7 @@ interface DelimStats {
   total: number;
 }
 
-function createHeaderCounts(): Record<Delimiter, number> {
+function createHeaderCounts() {
   const headerCounts = {} as Record<Delimiter, number>;
 
   for (const delimiter of DELIMITERS) {
@@ -66,7 +63,7 @@ function createHeaderCounts(): Record<Delimiter, number> {
   return headerCounts;
 }
 
-function createStats(): Record<Delimiter, DelimStats> {
+function createStats() {
   const stats = {} as Record<Delimiter, DelimStats>;
 
   for (const delimiter of DELIMITERS) {
@@ -86,16 +83,16 @@ function createStats(): Record<Delimiter, DelimStats> {
  * - Ignores delimiters that appear only inside quotes.
  * - Falls back to comma when no strong candidate is found.
  */
-function detectDelimiterFromLines(lines: string[]): Delimiter | typeof COMMA {
+function detectDelimiterFromLines(lines: string[]): "," | Delimiter {
   const sample = lines.slice(0, 20).filter((line) => line.length > 0);
 
   if (sample.length === 0) {
-    return COMMA;
+    return ",";
   }
 
   for (const line of sample) {
-    if (countDelimiterOutsideQuotes(line, TAB) > 0) {
-      return TAB;
+    if (countDelimiterOutsideQuotes(line, "\t") > 0) {
+      return "\t";
     }
   }
 
@@ -134,7 +131,7 @@ function detectDelimiterFromLines(lines: string[]): Delimiter | typeof COMMA {
     (delimiter) => delimiter !== " " && stats[delimiter].total > 0,
   );
 
-  let bestDelim: Delimiter | typeof COMMA = COMMA;
+  let bestDelim: "," | Delimiter = ",";
   let bestScore = -1;
 
   for (const delimiter of DELIMITERS) {
@@ -165,15 +162,14 @@ function detectDelimiterFromLines(lines: string[]): Delimiter | typeof COMMA {
   }
 
   if (bestScore <= 0) {
-    return COMMA;
+    return ",";
   }
 
   return bestDelim;
 }
 
 /**
- * Returns true if the comma at `commaIndex` is part of a numeric value
- * rather than a delimiter.
+ * Determines if a comma is part of a numeric value within the given text.
  *
  * Matches patterns like:
  * - 1,234.56
@@ -182,6 +178,14 @@ function detectDelimiterFromLines(lines: string[]): Delimiter | typeof COMMA {
  * - 1,234.56%
  *
  * and supports multiple 3-digit groups when building up the cell.
+ *
+ * @param text The full text being parsed.
+ *
+ * @param commaIndex The index of the comma in the text.
+ *
+ * @param currentCell The current cell content being built.
+ *
+ * @returns Whether the comma is part of a numeric value.
  */
 function isCommaInNumber(
   text: string,
@@ -189,34 +193,22 @@ function isCommaInNumber(
   currentCell: string,
 ) {
   const afterComma = text.slice(commaIndex + 1);
-  const immediateAfterMatch = /^\d{3}(?=[,.%\s]|$)/.exec(afterComma);
-  const spacedAfterMatch = /^\s+\d{3}(?=[,.%\s]|$)/.exec(afterComma);
+  const immediateAfterMatch = /^\d{3}(?=[,.%\s]|$)/.test(afterComma);
+  const spacedAfterMatch =
+    !immediateAfterMatch && /^\s+\d{3}(?=[,.%\s]|$)/.test(afterComma);
 
-  if (!immediateAfterMatch && !spacedAfterMatch) {
-    return false;
-  }
+  if (!immediateAfterMatch && !spacedAfterMatch) return false;
 
   const beforeComma = currentCell.trim();
+  const hasComma = beforeComma.includes(",");
 
-  if (spacedAfterMatch && !beforeComma.includes(COMMA)) {
-    return false;
+  if (spacedAfterMatch && !hasComma) return false;
+
+  if (hasComma) {
+    return /\d{3}$/.test(beforeComma);
   }
 
-  if (beforeComma.includes(COMMA)) {
-    const lastDigitGroup = /\d{3}$/.exec(beforeComma);
-
-    if (!lastDigitGroup) {
-      return false;
-    }
-  } else {
-    const firstGroup = /^-?[$€£¥]?\d{1,3}$/.exec(beforeComma);
-
-    if (!firstGroup) {
-      return false;
-    }
-  }
-
-  return true;
+  return /^-?[$€£¥]?\d{1,3}$/.test(beforeComma);
 }
 
 export interface ParseOptions<E = null> {
@@ -316,7 +308,6 @@ export function parse<E = null>(
     trim = true,
   } = options;
 
-  // Handle explicit undefined vs missing emptyValue
   const emptyVal = Object.prototype.hasOwnProperty.call(options, "emptyValue")
     ? options.emptyValue
     : emptyValue;
@@ -328,13 +319,13 @@ export function parse<E = null>(
   const rows = clipboardText.split(/\r\n|\r|\n/);
   const delimiter = detectDelimiterFromLines(rows);
 
-  if (delimiter === TAB) {
+  if (delimiter === "\t") {
     const result: (E | string)[][] = [];
 
     for (const row of rows) {
       if (skipEmptyRows && !row.trim()) continue;
 
-      const cells = row.split(TAB);
+      const cells = row.split("\t");
       let processedCells = cells.map((cell) => {
         const trimmedCell = trim ? cell.trim() : cell;
 
@@ -382,7 +373,7 @@ export function parse<E = null>(
           insideQuotes = !insideQuotes;
         }
       } else if (char === delimiter && !insideQuotes) {
-        if (delimiter === COMMA && isCommaInNumber(row, i, currentCell)) {
+        if (delimiter === "," && isCommaInNumber(row, i, currentCell)) {
           currentCell += char;
         } else {
           const trimmedCell = trim ? currentCell.trim() : currentCell;
