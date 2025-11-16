@@ -452,14 +452,6 @@ describe("parse", () => {
 
       expect(result).toStrictEqual([["A1", "234", "ok"]]);
     });
-
-    it("should not treat commas followed by space as numeric grouping, even after a grouped number", () => {
-      const input = "1,234, 567,ok";
-
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["1,234", "567", "ok"]]);
-    });
   });
 
   describe("Comma splitting (invalid number patterns)", () => {
@@ -1608,781 +1600,755 @@ describe("parse", () => {
   });
 
   describe("skipEmptyCells option", () => {
-    describe("Basic functionality", () => {
-      it("should skip empty cells in a row", () => {
-        const input = "A,,C\n,B,";
-        const result = parse(input, { skipEmptyCells: true });
+    it("should skip empty cells in a row", () => {
+      const input = "A,,C\n,B,";
+      const result = parse(input, { skipEmptyCells: true });
 
-        expect(result).toStrictEqual([["A", "C"], ["B"]]);
-      });
-
-      it("should skip empty cells with custom empty value", () => {
-        const input = "A,,C\n,B,";
-        const result = parse(input, {
-          emptyValue: "N/A",
-          skipEmptyCells: true,
-        });
-
-        expect(result).toStrictEqual([["A", "C"], ["B"]]);
-      });
-
-      it("should not skip cells when skipEmptyCells is false", () => {
-        const input = "A,,C\n,B,";
-        const result = parse(input, { skipEmptyCells: false });
-
-        expect(result).toStrictEqual([
-          ["A", null, "C"],
-          [null, "B", null],
-        ]);
-      });
-
-      it("should not skip cells when skipEmptyCells is omitted (default false)", () => {
-        const input = "A,,C\n,B,";
-        const result = parse(input);
-
-        expect(result).toStrictEqual([
-          ["A", null, "C"],
-          [null, "B", null],
-        ]);
-      });
+      expect(result).toStrictEqual([["A", "C"], ["B"]]);
     });
 
-    describe("Empty rows after skipping cells", () => {
-      it("should keep empty array when skipEmptyRows is false", () => {
-        const input = "A,B,C\n,,\nD,E,F";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: false,
-        });
-
-        expect(result).toStrictEqual([["A", "B", "C"], [], ["D", "E", "F"]]);
+    it("should skip empty cells with custom empty value", () => {
+      const input = "A,,C\n,B,";
+      const result = parse(input, {
+        emptyValue: "N/A",
+        skipEmptyCells: true,
       });
 
-      it("should remove empty row when skipEmptyRows is true", () => {
-        const input = "A,B,C\n,,\nD,E,F";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(result).toStrictEqual([
-          ["A", "B", "C"],
-          ["D", "E", "F"],
-        ]);
-      });
-
-      it("should handle multiple rows becoming empty", () => {
-        const input = "A,B\n,\n,,\nC,D";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(result).toStrictEqual([
-          ["A", "B"],
-          ["C", "D"],
-        ]);
-      });
-
-      it("should handle row that was already empty", () => {
-        const input = "A,B\n\nC,D";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: false,
-        });
-
-        expect(result).toStrictEqual([["A", "B"], [], ["C", "D"]]);
-      });
-
-      it("should keep empty tab row when skipEmptyRows is false", () => {
-        const input = "A\tB\t\n\t\t\nC\tD";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: false,
-        });
-
-        expect(result).toStrictEqual([["A", "B"], [], ["C", "D"]]);
-      });
-
-      it("should drop empty tab row when skipEmptyRows is true", () => {
-        const input = "A\tB\t\n\t\t\nC\tD";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(result).toStrictEqual([
-          ["A", "B"],
-          ["C", "D"],
-        ]);
-      });
-
-      it("should keep empty CSV row when skipEmptyRows is false", () => {
-        const input = "A,B,\n,,\nC,D,";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: false,
-        });
-
-        expect(result).toStrictEqual([["A", "B"], [], ["C", "D"]]);
-      });
-
-      it("should drop empty CSV row when skipEmptyRows is true", () => {
-        const input = "A,B,\n,,\nC,D,";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(result).toStrictEqual([
-          ["A", "B"],
-          ["C", "D"],
-        ]);
-      });
-
-      it("should always keep rows that still have data after skipping cells", () => {
-        const input = "A\t\tB\nC\t\tD";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(result).toStrictEqual([
-          ["A", "B"],
-          ["C", "D"],
-        ]);
-      });
-
-      it("should handle multiple empty rows with different skipEmptyRows settings", () => {
-        const input = "A\t\n\t\n\t\nB\t";
-
-        const keepEmpty = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: false,
-        });
-        const dropEmpty = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(keepEmpty).toStrictEqual([["A"], [], [], ["B"]]);
-        expect(dropEmpty).toStrictEqual([["A"], ["B"]]);
-      });
+      expect(result).toStrictEqual([["A", "C"], ["B"]]);
     });
 
-    describe("Interaction with padRows", () => {
-      it("should skip cells and NOT pad (skipEmptyCells takes precedence)", () => {
-        const input = "A,B,C\nD,,E\nF";
-        const result = parse(input, { padRows: true, skipEmptyCells: true });
+    it("should not skip cells when skipEmptyCells is false", () => {
+      const input = "A,,C\n,B,";
+      const result = parse(input, { skipEmptyCells: false });
 
-        expect(result).toStrictEqual([["A", "B", "C"], ["D", "E"], ["F"]]);
-      });
-
-      it("should produce uneven rows when both options enabled", () => {
-        const input = "A,,C,D\n,B,\nE,F,G";
-        const result = parse(input, { padRows: true, skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A", "C", "D"], ["B"], ["E", "F", "G"]]);
-      });
+      expect(result).toStrictEqual([
+        ["A", null, "C"],
+        [null, "B", null],
+      ]);
     });
 
-    describe("Different delimiters", () => {
-      it("should skip empty cells in tab-delimited data", () => {
-        const input = "A\t\tC\n\tB\t";
-        const result = parse(input, { skipEmptyCells: true });
+    it("should not skip cells when skipEmptyCells is omitted (default false)", () => {
+      const input = "A,,C\n,B,";
+      const result = parse(input);
 
-        expect(result).toStrictEqual([["A", "C"], ["B"]]);
-      });
-
-      it("should skip empty cells in semicolon-delimited data", () => {
-        const input = "A;;C\n;B;";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A", "C"], ["B"]]);
-      });
-
-      it("should skip empty cells in pipe-delimited data", () => {
-        const input = "A||C\n|B|";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A", "C"], ["B"]]);
-      });
-
-      it("should skip empty cells in space-delimited data", () => {
-        const input = "A  C\n B ";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A", "C"], ["B"]]);
-      });
+      expect(result).toStrictEqual([
+        ["A", null, "C"],
+        [null, "B", null],
+      ]);
     });
 
-    describe("Interaction with trim option", () => {
-      it("should trim then skip empty cells", () => {
-        const input = "A,  ,C\n ,B, ";
-        const result = parse(input, { skipEmptyCells: true, trim: true });
-
-        expect(result).toStrictEqual([["A", "C"], ["B"]]);
+    it("should keep empty array when skipEmptyRows is false", () => {
+      const input = "A,B,C\n,,\nD,E,F";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: false,
       });
 
-      it("should not skip whitespace-only cells when trim is false", () => {
-        const input = "A,  ,C\n ,B, ";
-        const result = parse(input, { skipEmptyCells: true, trim: false });
-
-        expect(result).toStrictEqual([
-          ["A", "  ", "C"],
-          [" ", "B", " "],
-        ]);
-      });
-
-      it("should preserve whitespace when trim is false and skipping empty cells (tab)", () => {
-        const input = "  A  \t\t  C  ";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(result).toStrictEqual([["  A  ", "  C  "]]);
-      });
-
-      it("should preserve whitespace when trim is false and skipping empty cells (CSV)", () => {
-        const input = "  A  ,  ,  C  ";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(result).toStrictEqual([["  A  ", "  ", "  C  "]]);
-      });
-
-      it("should still skip truly empty cells with trim=false (tab)", () => {
-        const input = "A\t\tC";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(result).toStrictEqual([["A", "C"]]);
-      });
-
-      it("should distinguish whitespace-only cells from empty cells", () => {
-        const inputWithWhitespace = "A\t  \tC";
-        const inputWithEmpty = "A\t\tC";
-
-        const withWhitespace = parse(inputWithWhitespace, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-        const withEmpty = parse(inputWithEmpty, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(withWhitespace).toStrictEqual([["A", "  ", "C"]]);
-        expect(withEmpty).toStrictEqual([["A", "C"]]);
-      });
-
-      it("should compare trim=true vs trim=false when skipping empty cells", () => {
-        const input = "  A  ,  B  ,  C  ";
-
-        const withTrim = parse(input, { skipEmptyCells: true, trim: true });
-        const withoutTrim = parse(input, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(withTrim).toStrictEqual([["A", "B", "C"]]);
-        expect(withoutTrim).toStrictEqual([["  A  ", "  B  ", "  C  "]]);
-      });
-
-      it("should skip empty CSV cells even when trim=false", () => {
-        const input = "A,,C";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(result).toStrictEqual([["A", "C"]]);
-      });
+      expect(result).toStrictEqual([["A", "B", "C"], [], ["D", "E", "F"]]);
     });
 
-    describe("Edge cases", () => {
-      it("should handle all empty cells in a row with skipEmptyRows false", () => {
-        const input = ",,";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: false,
-        });
-
-        expect(result).toStrictEqual([[]]);
+    it("should remove empty row when skipEmptyRows is true", () => {
+      const input = "A,B,C\n,,\nD,E,F";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
       });
 
-      it("should remove row with all empty cells when skipEmptyRows true", () => {
-        const input = ",,";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(result).toStrictEqual([]);
-      });
-
-      it("should handle row with only one non-empty cell", () => {
-        const input = ",,A,,";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A"]]);
-      });
-
-      it("should handle no empty cells", () => {
-        const input = "A,B,C\nD,E,F";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([
-          ["A", "B", "C"],
-          ["D", "E", "F"],
-        ]);
-      });
-
-      it("should handle single cell with value", () => {
-        const input = "A";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A"]]);
-      });
-
-      it("should handle single empty cell", () => {
-        const input = "";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([]);
-      });
-
-      it("should handle row with leading empty cells", () => {
-        const input = ",,A,B";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A", "B"]]);
-      });
-
-      it("should handle row with trailing empty cells", () => {
-        const input = "A,B,,";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A", "B"]]);
-      });
-
-      it("should handle row with empty cells in middle", () => {
-        const input = "A,,,B";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A", "B"]]);
-      });
-
-      it("should parse standard tab-delimited rows into distinct cells", () => {
-        const input = "A\tB\tC";
-        const result = parse(input, {
-          skipEmptyCells: false,
-          trim: true,
-        });
-
-        expect(result).toStrictEqual([["A", "B", "C"]]);
-      });
-
-      it("should treat empty tab cells as empty values", () => {
-        const input = "A\t\tC";
-        const result = parse(input, {
-          skipEmptyCells: false,
-          trim: true,
-        });
-
-        expect(result).toStrictEqual([["A", null, "C"]]);
-      });
-
-      it("should treat trailing tab as an empty cell", () => {
-        const input = "A\tB\t";
-        const result = parse(input, {
-          skipEmptyCells: false,
-          trim: true,
-        });
-
-        expect(result).toStrictEqual([["A", "B", null]]);
-      });
-
-      it("should preserve whitespace with skipEmptyCells and trim=false (tab)", () => {
-        const input = "  A  \t\t  C  ";
-        const result = parse(input, {
-          padRows: true,
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(result).toStrictEqual([["  A  ", "  C  "]]);
-      });
-
-      it("should preserve whitespace with skipEmptyCells and trim=false (CSV)", () => {
-        const input = "  A  ,  ,  C  ";
-        const result = parse(input, {
-          padRows: true,
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(result).toStrictEqual([["  A  ", "  ", "  C  "]]);
-      });
-
-      it("should let skipEmptyCells override padRows when both enabled", () => {
-        const input = "A,,C\nD,E,";
-        const result = parse(input, {
-          padRows: true,
-          skipEmptyCells: true,
-        });
-
-        expect(result).toStrictEqual([
-          ["A", "C"],
-          ["D", "E"],
-        ]);
-      });
-
-      it("should handle empty input with various options", () => {
-        const base = parse("");
-        const withTrim = parse("", { trim: true });
-        const withSkipEmptyRows = parse("", { skipEmptyRows: true });
-        const withSkipEmptyCells = parse("", { skipEmptyCells: true });
-        const withEverything = parse("", {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-          trim: true,
-        });
-
-        expect(base).toStrictEqual([]);
-        expect(withTrim).toStrictEqual([]);
-        expect(withSkipEmptyRows).toStrictEqual([]);
-        expect(withSkipEmptyCells).toStrictEqual([]);
-        expect(withEverything).toStrictEqual([]);
-      });
-
-      it("should handle a single empty line with and without skipping rows", () => {
-        const input = "\n";
-        const base = parse(input);
-        const skipRows = parse(input, { skipEmptyRows: true });
-
-        expect(base).toStrictEqual([[null]]);
-        expect(skipRows).toStrictEqual([]);
-      });
-
-      it("should keep whitespace-only cells when trim is false and skipping empty cells", () => {
-        const input = "A\t  \tC";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(result).toStrictEqual([["A", "  ", "C"]]);
-      });
-
-      it("should drop truly empty cells with skipEmptyCells and trim=false", () => {
-        const input = "A\t\tC";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          trim: false,
-        });
-
-        expect(result).toStrictEqual([["A", "C"]]);
-      });
-
-      it("should handle a mix of non-empty, empty, and fully empty rows", () => {
-        const input = "A,B,C\n,,\n\nD,E,F\n,,\nG,H,I";
-        const base = parse(input);
-        const skipRows = parse(input, { skipEmptyRows: true });
-        const skipCells = parse(input, { skipEmptyCells: true });
-        const skipBoth = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(base).toStrictEqual([
-          ["A", "B", "C"],
-          [null, null, null],
-          [null],
-          ["D", "E", "F"],
-          [null, null, null],
-          ["G", "H", "I"],
-        ]);
-
-        expect(skipRows).toStrictEqual([
-          ["A", "B", "C"],
-          [null, null, null],
-          ["D", "E", "F"],
-          [null, null, null],
-          ["G", "H", "I"],
-        ]);
-
-        expect(skipCells).toStrictEqual([
-          ["A", "B", "C"],
-          [],
-          [],
-          ["D", "E", "F"],
-          [],
-          ["G", "H", "I"],
-        ]);
-
-        expect(skipBoth).toStrictEqual([
-          ["A", "B", "C"],
-          ["D", "E", "F"],
-          ["G", "H", "I"],
-        ]);
-      });
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", "F"],
+      ]);
     });
 
-    describe("Quoted values", () => {
-      it("should skip quoted empty cells", () => {
-        const input = '"A","","C"';
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([["A", "C"]]);
+    it("should handle multiple rows becoming empty", () => {
+      const input = "A,B\n,\n,,\nC,D";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
       });
 
-      it("should not skip quoted whitespace when trim is false", () => {
-        const input = '"A"," ","C"';
-        const result = parse(input, { skipEmptyCells: true, trim: false });
-
-        expect(result).toStrictEqual([["A", " ", "C"]]);
-      });
-
-      it("should skip quoted whitespace when trim is true", () => {
-        const input = '"A"," ","C"';
-        const result = parse(input, { skipEmptyCells: true, trim: true });
-
-        expect(result).toStrictEqual([["A", "C"]]);
-      });
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+      ]);
     });
 
-    describe("Numeric commas", () => {
-      it("should preserve numeric commas while skipping empty cells", () => {
-        const input = 'Name,,Amount\nJohn,,"$1,234.56"\n,Jane,$2,345.67';
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([
-          ["Name", "Amount"],
-          ["John", "$1,234.56"],
-          ["Jane", "$2,345.67"],
-        ]);
+    it("should handle row that was already empty", () => {
+      const input = "A,B\n\nC,D";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: false,
       });
 
-      it("should handle empty cells between numeric values", () => {
-        const input = "A,B,C\n1,234.56,,9,876.54\n,$5,678.90,";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([
-          ["A", "B", "C"],
-          ["1,234.56", "9,876.54"],
-          ["$5,678.90"],
-        ]);
-      });
+      expect(result).toStrictEqual([["A", "B"], [], ["C", "D"]]);
     });
 
-    describe("Real-world scenarios", () => {
-      it("should handle sparse spreadsheet data", () => {
-        const input =
-          "Name,,,Age,,,City\nAlice,,,30,,,\n,,,25,,,Boston\nCharlie,,,,,,,";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([
-          ["Name", "Age", "City"],
-          ["Alice", "30"],
-          ["25", "Boston"],
-          ["Charlie"],
-        ]);
+    it("should keep empty tab row when skipEmptyRows is false", () => {
+      const input = "A\tB\t\n\t\t\nC\tD";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: false,
       });
 
-      it("should handle financial data with gaps", () => {
-        const input = "Q1,,Q2,,Q3\n$1,234.56,,$2,345.67,\n,,$3,456.78,,";
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toStrictEqual([
-          ["Q1", "Q2", "Q3"],
-          ["$1,234.56", "$2,345.67"],
-          ["$3,456.78"],
-        ]);
-      });
-
-      it("should clean up messy CSV export", () => {
-        const input =
-          "Product,,Price,,Stock,,\nWidget,,$1,234.56,,100,,\n,,Gadget,,$2,345.67,,50";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(result).toStrictEqual([
-          ["Product", "Price", "Stock"],
-          ["Widget", "$1,234.56", "100"],
-          ["Gadget", "$2,345.67", "50"],
-        ]);
-      });
+      expect(result).toStrictEqual([["A", "B"], [], ["C", "D"]]);
     });
 
-    describe("All options combined", () => {
-      it("should work with emptyValue, skipEmptyCells, skipEmptyRows, trim", () => {
-        const input = "  A  ,,  C  \n\n  ,,  \n  D  ,  E  ,";
-        const result = parse(input, {
-          emptyValue: "N/A",
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-          trim: true,
-        });
-
-        expect(result).toStrictEqual([
-          ["A", "C"],
-          ["D", "E"],
-        ]);
+    it("should drop empty tab row when skipEmptyRows is true", () => {
+      const input = "A\tB\t\n\t\t\nC\tD";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
       });
 
-      it("should work with skipEmptyCells, padRows (skipEmptyCells wins), skipEmptyRows", () => {
-        const input = "A,B,C\n,,\nD,,E\n\nF";
-        const result = parse(input, {
-          padRows: true,
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-        });
-
-        expect(result).toStrictEqual([["A", "B", "C"], ["D", "E"], ["F"]]);
-      });
-
-      it("should not treat malformed numeric grouping as a number", () => {
-        const input = "12,34.56,ok";
-
-        const result = parse(input);
-
-        expect(result).toStrictEqual([["12", "34.56", "ok"]]);
-      });
-
-      it("should treat commas with digits on both sides as numeric grouping", () => {
-        const input = ",123,123,";
-
-        const result = parse(input);
-
-        expect(result).toStrictEqual([[null, "123,123", null]]);
-      });
-
-      it("should not treat commas next to letters as numeric", () => {
-        const input = "A1,234B,ok";
-
-        const result = parse(input);
-
-        expect(result).toStrictEqual([["A1", "234B", "ok"]]);
-      });
-
-      it("should still treat valid grouped currency with percent as numeric", () => {
-        const input = "-$1,234.56%,done";
-
-        const result = parse(input);
-
-        expect(result).toStrictEqual([["-$1,234.56%", "done"]]);
-      });
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+      ]);
     });
 
-    describe("Cross-format consistency", () => {
-      it("should skip empty cells consistently in tab and CSV format", () => {
-        const tabInput = "A\t\tC\n\tB\t";
-        const csvInput = "A,,C\n,B,";
-
-        const tabResult = parse(tabInput, { skipEmptyCells: true });
-        const csvResult = parse(csvInput, { skipEmptyCells: true });
-
-        expect(tabResult).toStrictEqual(csvResult);
-        expect(tabResult).toStrictEqual([["A", "C"], ["B"]]);
+    it("should keep empty CSV row when skipEmptyRows is false", () => {
+      const input = "A,B,\n,,\nC,D,";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: false,
       });
 
-      it("should handle all options consistently across formats", () => {
-        const tabInput = "A\t\tC\n\n  D  \t  E  \t";
-        const csvInput = "A,,C\n\n  D  ,  E  ,";
-
-        const options = {
-          emptyValue: "N/A" as const,
-          skipEmptyCells: true,
-          skipEmptyRows: true,
-          trim: true,
-        };
-        const tabResult = parse(tabInput, options);
-        const csvResult = parse(csvInput, options);
-
-        expect(tabResult).toStrictEqual(csvResult);
-        expect(tabResult).toStrictEqual([
-          ["A", "C"],
-          ["D", "E"],
-        ]);
-      });
+      expect(result).toStrictEqual([["A", "B"], [], ["C", "D"]]);
     });
 
-    describe("Tab-delimited edge cases", () => {
-      it("should keep empty array for tab-delimited when skipEmptyRows is false", () => {
-        const input = "A\tB\tC\n\t\t\nD\tE\tF";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: false,
-        });
-
-        expect(result).toStrictEqual([["A", "B", "C"], [], ["D", "E", "F"]]);
+    it("should drop empty CSV row when skipEmptyRows is true", () => {
+      const input = "A,B,\n,,\nC,D,";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
       });
 
-      it("should handle tab-delimited with only empty cells throughout", () => {
-        const input = "\t\t\n\t\t";
-        const result = parse(input, {
-          skipEmptyCells: true,
-          skipEmptyRows: false,
-        });
-
-        expect(result).toStrictEqual([[], []]);
-      });
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+      ]);
     });
 
-    describe("Large datasets", () => {
-      it("should skip empty cells in large dataset (tab-delimited)", () => {
-        const rows = Array.from({ length: 10 }, (_, i) => {
-          return `${i}\t\t${i * 2}\t\t${i * 3}`;
-        });
-        const input = `A\t\tB\t\tC\n${rows.join("\n")}`;
-        const result = parse(input, { skipEmptyCells: true });
-
-        expect(result).toHaveLength(11);
-        expect(result[0]).toStrictEqual(["A", "B", "C"]);
-        expect(result[1]).toStrictEqual(["0", "0", "0"]);
-        expect(result[10]).toStrictEqual(["9", "18", "27"]);
+    it("should always keep rows that still have data after skipping cells", () => {
+      const input = "A\t\tB\nC\t\tD";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
       });
 
-      it("should skip empty cells in large CSV dataset", () => {
-        const rows = Array.from({ length: 10 }, (_, i) => {
-          return `${i},,${i * 2},,${i * 3}`;
-        });
-        const input = `A,,B,,C\n${rows.join("\n")}`;
-        const result = parse(input, { skipEmptyCells: true });
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+      ]);
+    });
 
-        expect(result).toHaveLength(11);
-        expect(result[0]).toStrictEqual(["A", "B", "C"]);
-        expect(result[1]).toStrictEqual(["0", "0", "0"]);
-        expect(result[10]).toStrictEqual(["9", "18", "27"]);
+    it("should handle multiple empty rows with different skipEmptyRows settings", () => {
+      const input = "A\t\n\t\n\t\nB\t";
+
+      const keepEmpty = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: false,
+      });
+      const dropEmpty = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
       });
 
-      it("should handle rows with many empty cells (tab)", () => {
-        const input = "A\t\tC\t\tE\t\tG\t\tI\nJ\t\tL\t\tN\t\tP\t\tR";
-        const result = parse(input, { skipEmptyCells: true });
+      expect(keepEmpty).toStrictEqual([["A"], [], [], ["B"]]);
+      expect(dropEmpty).toStrictEqual([["A"], ["B"]]);
+    });
 
-        expect(result).toStrictEqual([
-          ["A", "C", "E", "G", "I"],
-          ["J", "L", "N", "P", "R"],
-        ]);
+    it("should skip cells and NOT pad (skipEmptyCells takes precedence)", () => {
+      const input = "A,B,C\nD,,E\nF";
+      const result = parse(input, { padRows: true, skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "B", "C"], ["D", "E"], ["F"]]);
+    });
+
+    it("should produce uneven rows when both options enabled", () => {
+      const input = "A,,C,D\n,B,\nE,F,G";
+      const result = parse(input, { padRows: true, skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "C", "D"], ["B"], ["E", "F", "G"]]);
+    });
+
+    it("should skip empty cells in tab-delimited data", () => {
+      const input = "A\t\tC\n\tB\t";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "C"], ["B"]]);
+    });
+
+    it("should skip empty cells in semicolon-delimited data", () => {
+      const input = "A;;C\n;B;";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "C"], ["B"]]);
+    });
+
+    it("should skip empty cells in pipe-delimited data", () => {
+      const input = "A||C\n|B|";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "C"], ["B"]]);
+    });
+
+    it("should skip empty cells in space-delimited data", () => {
+      const input = "A  C\n B ";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "C"], ["B"]]);
+    });
+
+    it("should trim then skip empty cells", () => {
+      const input = "A,  ,C\n ,B, ";
+      const result = parse(input, { skipEmptyCells: true, trim: true });
+
+      expect(result).toStrictEqual([["A", "C"], ["B"]]);
+    });
+
+    it("should not skip whitespace-only cells when trim is false", () => {
+      const input = "A,  ,C\n ,B, ";
+      const result = parse(input, { skipEmptyCells: true, trim: false });
+
+      expect(result).toStrictEqual([
+        ["A", "  ", "C"],
+        [" ", "B", " "],
+      ]);
+    });
+
+    it("should preserve whitespace when trim is false and skipping empty cells (tab)", () => {
+      const input = "  A  \t\t  C  ";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        trim: false,
       });
 
-      it("should handle rows with many empty cells (CSV)", () => {
-        const input = "A,,C,,E,,G,,I\nJ,,L,,N,,P,,R";
-        const result = parse(input, { skipEmptyCells: true });
+      expect(result).toStrictEqual([["  A  ", "  C  "]]);
+    });
 
-        expect(result).toStrictEqual([
-          ["A", "C", "E", "G", "I"],
-          ["J", "L", "N", "P", "R"],
-        ]);
+    it("should preserve whitespace when trim is false and skipping empty cells (CSV)", () => {
+      const input = "  A  ,  ,  C  ";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        trim: false,
       });
+
+      expect(result).toStrictEqual([["  A  ", "  ", "  C  "]]);
+    });
+
+    it("should still skip truly empty cells with trim=false (tab)", () => {
+      const input = "A\t\tC";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        trim: false,
+      });
+
+      expect(result).toStrictEqual([["A", "C"]]);
+    });
+
+    it("should distinguish whitespace-only cells from empty cells", () => {
+      const inputWithWhitespace = "A\t  \tC";
+      const inputWithEmpty = "A\t\tC";
+
+      const withWhitespace = parse(inputWithWhitespace, {
+        skipEmptyCells: true,
+        trim: false,
+      });
+      const withEmpty = parse(inputWithEmpty, {
+        skipEmptyCells: true,
+        trim: false,
+      });
+
+      expect(withWhitespace).toStrictEqual([["A", "  ", "C"]]);
+      expect(withEmpty).toStrictEqual([["A", "C"]]);
+    });
+
+    it("should compare trim=true vs trim=false when skipping empty cells", () => {
+      const input = "  A  ,  B  ,  C  ";
+
+      const withTrim = parse(input, { skipEmptyCells: true, trim: true });
+      const withoutTrim = parse(input, {
+        skipEmptyCells: true,
+        trim: false,
+      });
+
+      expect(withTrim).toStrictEqual([["A", "B", "C"]]);
+      expect(withoutTrim).toStrictEqual([["  A  ", "  B  ", "  C  "]]);
+    });
+
+    it("should skip empty CSV cells even when trim=false", () => {
+      const input = "A,,C";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        trim: false,
+      });
+
+      expect(result).toStrictEqual([["A", "C"]]);
+    });
+
+    it("should handle all empty cells in a row with skipEmptyRows false", () => {
+      const input = ",,";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: false,
+      });
+
+      expect(result).toStrictEqual([[]]);
+    });
+
+    it("should remove row with all empty cells when skipEmptyRows true", () => {
+      const input = ",,";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
+      });
+
+      expect(result).toStrictEqual([]);
+    });
+
+    it("should handle row with only one non-empty cell", () => {
+      const input = ",,A,,";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A"]]);
+    });
+
+    it("should handle no empty cells", () => {
+      const input = "A,B,C\nD,E,F";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", "F"],
+      ]);
+    });
+
+    it("should handle single cell with value", () => {
+      const input = "A";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A"]]);
+    });
+
+    it("should handle single empty cell", () => {
+      const input = "";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([]);
+    });
+
+    it("should handle row with leading empty cells", () => {
+      const input = ",,A,B";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "B"]]);
+    });
+
+    it("should handle row with trailing empty cells", () => {
+      const input = "A,B,,";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "B"]]);
+    });
+
+    it("should handle row with empty cells in middle", () => {
+      const input = "A,,,B";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "B"]]);
+    });
+
+    it("should parse standard tab-delimited rows into distinct cells", () => {
+      const input = "A\tB\tC";
+      const result = parse(input, {
+        skipEmptyCells: false,
+        trim: true,
+      });
+
+      expect(result).toStrictEqual([["A", "B", "C"]]);
+    });
+
+    it("should treat empty tab cells as empty values", () => {
+      const input = "A\t\tC";
+      const result = parse(input, {
+        skipEmptyCells: false,
+        trim: true,
+      });
+
+      expect(result).toStrictEqual([["A", null, "C"]]);
+    });
+
+    it("should treat trailing tab as an empty cell", () => {
+      const input = "A\tB\t";
+      const result = parse(input, {
+        skipEmptyCells: false,
+        trim: true,
+      });
+
+      expect(result).toStrictEqual([["A", "B", null]]);
+    });
+
+    it("should preserve whitespace with skipEmptyCells and trim=false (tab)", () => {
+      const input = "  A  \t\t  C  ";
+      const result = parse(input, {
+        padRows: true,
+        skipEmptyCells: true,
+        trim: false,
+      });
+
+      expect(result).toStrictEqual([["  A  ", "  C  "]]);
+    });
+
+    it("should preserve whitespace with skipEmptyCells and trim=false (CSV)", () => {
+      const input = "  A  ,  ,  C  ";
+      const result = parse(input, {
+        padRows: true,
+        skipEmptyCells: true,
+        trim: false,
+      });
+
+      expect(result).toStrictEqual([["  A  ", "  ", "  C  "]]);
+    });
+
+    it("should let skipEmptyCells override padRows when both enabled", () => {
+      const input = "A,,C\nD,E,";
+      const result = parse(input, {
+        padRows: true,
+        skipEmptyCells: true,
+      });
+
+      expect(result).toStrictEqual([
+        ["A", "C"],
+        ["D", "E"],
+      ]);
+    });
+
+    it("should handle empty input with various options", () => {
+      const base = parse("");
+      const withTrim = parse("", { trim: true });
+      const withSkipEmptyRows = parse("", { skipEmptyRows: true });
+      const withSkipEmptyCells = parse("", { skipEmptyCells: true });
+      const withEverything = parse("", {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
+        trim: true,
+      });
+
+      expect(base).toStrictEqual([]);
+      expect(withTrim).toStrictEqual([]);
+      expect(withSkipEmptyRows).toStrictEqual([]);
+      expect(withSkipEmptyCells).toStrictEqual([]);
+      expect(withEverything).toStrictEqual([]);
+    });
+
+    it("should handle a single empty line with and without skipping rows", () => {
+      const input = "\n";
+      const base = parse(input);
+      const skipRows = parse(input, { skipEmptyRows: true });
+
+      expect(base).toStrictEqual([[null]]);
+      expect(skipRows).toStrictEqual([]);
+    });
+
+    it("should keep whitespace-only cells when trim is false and skipping empty cells", () => {
+      const input = "A\t  \tC";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        trim: false,
+      });
+
+      expect(result).toStrictEqual([["A", "  ", "C"]]);
+    });
+
+    it("should drop truly empty cells with skipEmptyCells and trim=false", () => {
+      const input = "A\t\tC";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        trim: false,
+      });
+
+      expect(result).toStrictEqual([["A", "C"]]);
+    });
+
+    it("should handle a mix of non-empty, empty, and fully empty rows", () => {
+      const input = "A,B,C\n,,\n\nD,E,F\n,,\nG,H,I";
+      const base = parse(input);
+      const skipRows = parse(input, { skipEmptyRows: true });
+      const skipCells = parse(input, { skipEmptyCells: true });
+      const skipBoth = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
+      });
+
+      expect(base).toStrictEqual([
+        ["A", "B", "C"],
+        [null, null, null],
+        [null],
+        ["D", "E", "F"],
+        [null, null, null],
+        ["G", "H", "I"],
+      ]);
+
+      expect(skipRows).toStrictEqual([
+        ["A", "B", "C"],
+        [null, null, null],
+        ["D", "E", "F"],
+        [null, null, null],
+        ["G", "H", "I"],
+      ]);
+
+      expect(skipCells).toStrictEqual([
+        ["A", "B", "C"],
+        [],
+        [],
+        ["D", "E", "F"],
+        [],
+        ["G", "H", "I"],
+      ]);
+
+      expect(skipBoth).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", "F"],
+        ["G", "H", "I"],
+      ]);
+    });
+
+    it("should skip quoted empty cells", () => {
+      const input = '"A","","C"';
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([["A", "C"]]);
+    });
+
+    it("should not skip quoted whitespace when trim is false", () => {
+      const input = '"A"," ","C"';
+      const result = parse(input, { skipEmptyCells: true, trim: false });
+
+      expect(result).toStrictEqual([["A", " ", "C"]]);
+    });
+
+    it("should skip quoted whitespace when trim is true", () => {
+      const input = '"A"," ","C"';
+      const result = parse(input, { skipEmptyCells: true, trim: true });
+
+      expect(result).toStrictEqual([["A", "C"]]);
+    });
+
+    it("should preserve numeric commas while skipping empty cells", () => {
+      const input = 'Name,,Amount\nJohn,,"$1,234.56"\n,Jane,$2,345.67';
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([
+        ["Name", "Amount"],
+        ["John", "$1,234.56"],
+        ["Jane", "$2,345.67"],
+      ]);
+    });
+
+    it("should handle empty cells between numeric values", () => {
+      const input = "A,B,C\n1,234.56,,9,876.54\n,$5,678.90,";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["1,234.56", "9,876.54"],
+        ["$5,678.90"],
+      ]);
+    });
+
+    it("should handle sparse spreadsheet data", () => {
+      const input =
+        "Name,,,Age,,,City\nAlice,,,30,,,\n,,,25,,,Boston\nCharlie,,,,,,,";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([
+        ["Name", "Age", "City"],
+        ["Alice", "30"],
+        ["25", "Boston"],
+        ["Charlie"],
+      ]);
+    });
+
+    it("should handle financial data with gaps", () => {
+      const input = "Q1,,Q2,,Q3\n$1,234.56,,$2,345.67,\n,,$3,456.78,,";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([
+        ["Q1", "Q2", "Q3"],
+        ["$1,234.56", "$2,345.67"],
+        ["$3,456.78"],
+      ]);
+    });
+
+    it("should clean up messy CSV export", () => {
+      const input =
+        "Product,,Price,,Stock,,\nWidget,,$1,234.56,,100,,\n,,Gadget,,$2,345.67,,50";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: true,
+      });
+
+      expect(result).toStrictEqual([
+        ["Product", "Price", "Stock"],
+        ["Widget", "$1,234.56", "100"],
+        ["Gadget", "$2,345.67", "50"],
+      ]);
+    });
+
+    it("should work with emptyValue, skipEmptyCells, skipEmptyRows, trim", () => {
+      const input = "  A  ,,  C  \n\n  ,,  \n  D  ,  E  ,";
+      const result = parse(input, {
+        emptyValue: "N/A",
+        skipEmptyCells: true,
+        skipEmptyRows: true,
+        trim: true,
+      });
+
+      expect(result).toStrictEqual([
+        ["A", "C"],
+        ["D", "E"],
+      ]);
+    });
+
+    it("should work with skipEmptyCells, padRows (skipEmptyCells wins), skipEmptyRows", () => {
+      const input = "A,B,C\n,,\nD,,E\n\nF";
+      const result = parse(input, {
+        padRows: true,
+        skipEmptyCells: true,
+        skipEmptyRows: true,
+      });
+
+      expect(result).toStrictEqual([["A", "B", "C"], ["D", "E"], ["F"]]);
+    });
+
+    it("should not treat malformed numeric grouping as a number", () => {
+      const input = "12,34.56,ok";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["12", "34.56", "ok"]]);
+    });
+
+    it("should treat commas with digits on both sides as numeric grouping", () => {
+      const input = ",123,123,";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([[null, "123,123", null]]);
+    });
+
+    it("should not treat commas next to letters as numeric", () => {
+      const input = "A1,234B,ok";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["A1", "234B", "ok"]]);
+    });
+
+    it("should still treat valid grouped currency with percent as numeric", () => {
+      const input = "-$1,234.56%,done";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["-$1,234.56%", "done"]]);
+    });
+
+    it("should skip empty cells consistently in tab and CSV format", () => {
+      const tabInput = "A\t\tC\n\tB\t";
+      const csvInput = "A,,C\n,B,";
+
+      const tabResult = parse(tabInput, { skipEmptyCells: true });
+      const csvResult = parse(csvInput, { skipEmptyCells: true });
+
+      expect(tabResult).toStrictEqual(csvResult);
+      expect(tabResult).toStrictEqual([["A", "C"], ["B"]]);
+    });
+
+    it("should handle all options consistently across formats", () => {
+      const tabInput = "A\t\tC\n\n  D  \t  E  \t";
+      const csvInput = "A,,C\n\n  D  ,  E  ,";
+
+      const options = {
+        emptyValue: "N/A" as const,
+        skipEmptyCells: true,
+        skipEmptyRows: true,
+        trim: true,
+      };
+      const tabResult = parse(tabInput, options);
+      const csvResult = parse(csvInput, options);
+
+      expect(tabResult).toStrictEqual(csvResult);
+      expect(tabResult).toStrictEqual([
+        ["A", "C"],
+        ["D", "E"],
+      ]);
+    });
+
+    it("should keep empty array for tab-delimited when skipEmptyRows is false", () => {
+      const input = "A\tB\tC\n\t\t\nD\tE\tF";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: false,
+      });
+
+      expect(result).toStrictEqual([["A", "B", "C"], [], ["D", "E", "F"]]);
+    });
+
+    it("should handle tab-delimited with only empty cells throughout", () => {
+      const input = "\t\t\n\t\t";
+      const result = parse(input, {
+        skipEmptyCells: true,
+        skipEmptyRows: false,
+      });
+
+      expect(result).toStrictEqual([[], []]);
+    });
+
+    it("should skip empty cells in large dataset (tab-delimited)", () => {
+      const rows = Array.from({ length: 10 }, (_, i) => {
+        return `${i}\t\t${i * 2}\t\t${i * 3}`;
+      });
+      const input = `A\t\tB\t\tC\n${rows.join("\n")}`;
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toHaveLength(11);
+      expect(result[0]).toStrictEqual(["A", "B", "C"]);
+      expect(result[1]).toStrictEqual(["0", "0", "0"]);
+      expect(result[10]).toStrictEqual(["9", "18", "27"]);
+    });
+
+    it("should skip empty cells in large CSV dataset", () => {
+      const rows = Array.from({ length: 10 }, (_, i) => {
+        return `${i},,${i * 2},,${i * 3}`;
+      });
+      const input = `A,,B,,C\n${rows.join("\n")}`;
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toHaveLength(11);
+      expect(result[0]).toStrictEqual(["A", "B", "C"]);
+      expect(result[1]).toStrictEqual(["0", "0", "0"]);
+      expect(result[10]).toStrictEqual(["9", "18", "27"]);
+    });
+
+    it("should handle rows with many empty cells (tab)", () => {
+      const input = "A\t\tC\t\tE\t\tG\t\tI\nJ\t\tL\t\tN\t\tP\t\tR";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([
+        ["A", "C", "E", "G", "I"],
+        ["J", "L", "N", "P", "R"],
+      ]);
+    });
+
+    it("should handle rows with many empty cells (CSV)", () => {
+      const input = "A,,C,,E,,G,,I\nJ,,L,,N,,P,,R";
+      const result = parse(input, { skipEmptyCells: true });
+
+      expect(result).toStrictEqual([
+        ["A", "C", "E", "G", "I"],
+        ["J", "L", "N", "P", "R"],
+      ]);
     });
   });
 
@@ -2451,6 +2417,14 @@ describe("parse", () => {
         ["1000", "22,000", "3,500"],
         ["4", "500,000,000", "60", "70000"],
       ]);
+    });
+
+    it("should not treat commas followed by space as numeric grouping, even after a grouped number", () => {
+      const input = "1,234, 567,ok";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["1,234", "567", "ok"]]);
     });
 
     it("should handle a single empty line with and without skipping rows", () => {
