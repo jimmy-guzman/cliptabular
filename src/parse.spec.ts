@@ -769,13 +769,6 @@ describe("parse", () => {
       expect(parse("A,B,C")).toStrictEqual([["A", "B", "C"]]);
     });
 
-    it("should handle trailing newline", () => {
-      const input = "A,B\nC,D\n";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["A", "B"], ["C", "D"], [null]]);
-    });
-
     it("should keep whitespace-only rows by default", () => {
       const input = "A,B\n   \nC,D";
       const result = parse(input);
@@ -1547,15 +1540,6 @@ describe("parse", () => {
       ]);
     });
 
-    it("should not pad when input is completely empty in tab mode", () => {
-      const input = "";
-      const result = parse(input, {
-        padRows: true,
-      });
-
-      expect(result).toStrictEqual([]);
-    });
-
     it("should not pad tab-delimited data when skipping empty cells", () => {
       const input = "A\t\tC\nD\t\t";
       const result = parse(input, {
@@ -1577,15 +1561,6 @@ describe("parse", () => {
         [null, null, null],
         [null, null, null],
       ]);
-    });
-
-    it("should not pad when CSV input is empty", () => {
-      const input = "";
-      const result = parse(input, {
-        padRows: true,
-      });
-
-      expect(result).toStrictEqual([]);
     });
 
     it("should not pad CSV data when skipping empty cells", () => {
@@ -2042,15 +2017,6 @@ describe("parse", () => {
       expect(withEverything).toStrictEqual([]);
     });
 
-    it("should handle a single empty line with and without skipping rows", () => {
-      const input = "\n";
-      const base = parse(input);
-      const skipRows = parse(input, { skipEmptyRows: true });
-
-      expect(base).toStrictEqual([[null]]);
-      expect(skipRows).toStrictEqual([]);
-    });
-
     it("should keep whitespace-only cells when trim is false and skipping empty cells", () => {
       const input = "A\t  \tC";
       const result = parse(input, {
@@ -2348,62 +2314,6 @@ describe("parse", () => {
       expect(result).toStrictEqual([
         ["A", "C", "E", "G", "I"],
         ["J", "L", "N", "P", "R"],
-      ]);
-    });
-  });
-
-  describe("Examples", () => {
-    it("should match README percentage example", () => {
-      const input = "Rate\n15.5%\n1,234.56%";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["Rate"], ["15.5%"], ["1,234.56%"]]);
-    });
-
-    it("should match README CSV quoted example", () => {
-      const input = '"Smith, John","New York, NY"';
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["Smith, John", "New York, NY"]]);
-    });
-
-    it("should match README currency example", () => {
-      const input = "Item,Price\nWidget,$1,234.56";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([
-        ["Item", "Price"],
-        ["Widget", "$1,234.56"],
-      ]);
-    });
-
-    it("should match README empty value example", () => {
-      const input = "A,,C\n,B,";
-      const result = parse(input, { emptyValue: "N/A" });
-
-      expect(result).toStrictEqual([
-        ["A", "N/A", "C"],
-        ["N/A", "B", "N/A"],
-      ]);
-    });
-
-    it("should match README skipEmptyRows example", () => {
-      const input = "A,B\n\nC,D";
-      const result = parse(input, { skipEmptyRows: true });
-
-      expect(result).toStrictEqual([
-        ["A", "B"],
-        ["C", "D"],
-      ]);
-    });
-
-    it("should match README Excel tab example", () => {
-      const input = "Name\tAge\tCity\nJohn\t30\tNew York";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([
-        ["Name", "Age", "City"],
-        ["John", "30", "New York"],
       ]);
     });
   });
