@@ -413,6 +413,38 @@ describe("parse", () => {
 
       expect(result).toStrictEqual([["A1", "234", "ok"]]);
     });
+
+    it("should not treat malformed numeric grouping as a number", () => {
+      const input = "12,34.56,ok";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["12", "34.56", "ok"]]);
+    });
+
+    it("should treat commas with digits on both sides as numeric grouping", () => {
+      const input = ",123,123,";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([[null, "123,123", null]]);
+    });
+
+    it("should not treat commas next to letters as numeric", () => {
+      const input = "A1,234B,ok";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["A1", "234B", "ok"]]);
+    });
+
+    it("should still treat valid grouped currency with percent as numeric", () => {
+      const input = "-$1,234.56%,done";
+
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["-$1,234.56%", "done"]]);
+    });
   });
 
   describe("Comma splitting (invalid number patterns)", () => {
@@ -2026,38 +2058,6 @@ describe("parse", () => {
       });
 
       expect(result).toStrictEqual([["A", "B", "C"], ["D", "E"], ["F"]]);
-    });
-
-    it("should not treat malformed numeric grouping as a number", () => {
-      const input = "12,34.56,ok";
-
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["12", "34.56", "ok"]]);
-    });
-
-    it("should treat commas with digits on both sides as numeric grouping", () => {
-      const input = ",123,123,";
-
-      const result = parse(input);
-
-      expect(result).toStrictEqual([[null, "123,123", null]]);
-    });
-
-    it("should not treat commas next to letters as numeric", () => {
-      const input = "A1,234B,ok";
-
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["A1", "234B", "ok"]]);
-    });
-
-    it("should still treat valid grouped currency with percent as numeric", () => {
-      const input = "-$1,234.56%,done";
-
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["-$1,234.56%", "done"]]);
     });
 
     it("should skip empty cells consistently in tab and CSV format", () => {
