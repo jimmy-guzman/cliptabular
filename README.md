@@ -1,4 +1,4 @@
-# cliptabular 📋➡️📊
+# cliptabular 📋↔️📊
 
 > Parse and stringify clipboard data from Excel, CSV, and other delimited formats. Handles tabs, commas, quotes, currency, percentages, and negative numbers.
 
@@ -13,12 +13,12 @@
 ## Features
 
 - **Smart delimiter detection** (tabs, commas, semicolons, pipes, spaces)
-- Automatically prefers Excel's **tab-delimited** format
+- Automatically prefers Excel’s **tab-delimited** format
 - Ignores delimiters inside quotes
-- Handles quoted fields and escaped quotes
-- Supports numeric grouping, currency, negatives, and percentages
-- Handles empty cells and empty rows
-- Bidirectional: parse clipboard → arrays, stringify arrays → clipboard
+- Handles quoted fields, escaped quotes, and messy numeric values
+- Supports currency, grouping, negatives, and percentages
+- Handles empty cells and empty rows cleanly
+- **Bidirectional**: parse → arrays, stringify → clipboard text
 - **Zero dependencies**
 
 ---
@@ -31,6 +31,8 @@ npm install cliptabular
 pnpm add cliptabular
 ```
 
+---
+
 ## Usage
 
 ### Parsing
@@ -42,12 +44,12 @@ const text = await navigator.clipboard.readText();
 const rows = parse(text);
 ```
 
-Depending on what was pasted, `parse(...)` adapts automatically:
+#### Examples
 
 ```ts
 // Excel (tab-delimited)
-parse("Name\tAge\tCity\nJohn\t30\tNew York");
-// => [["Name","Age","City"],["John","30","New York"]]
+parse("Name\tAge\nJohn\t30");
+// => [["Name","Age"],["John","30"]]
 ```
 
 ```ts
@@ -57,16 +59,18 @@ parse('"Smith, John","New York, NY"');
 ```
 
 ```ts
-// Mixed numeric + currency — commas stay *inside* the value
+// Numeric + currency — comma stays inside the value
 parse("Item,Price\nWidget,$1,234.56");
 // => [["Item","Price"],["Widget","$1,234.56"]]
 ```
 
 ```ts
-// Empty cells become `null` by default
+// Empty cells become null by default
 parse("A,,C");
 // => [["A", null, "C"]]
 ```
+
+---
 
 ### Stringifying
 
@@ -74,15 +78,17 @@ parse("A,,C");
 import { stringify } from "cliptabular";
 
 const data = [
-  ["Name", "Age", "City"],
-  ["John", "30", "New York"],
+  ["Name", "Age"],
+  ["John", "30"],
 ];
 
 const text = stringify(data);
+// "Name\tAge\nJohn\t30"
+
 await navigator.clipboard.writeText(text);
 ```
 
-Examples:
+#### Example
 
 ```ts
 // Tab-delimited by default (Excel-friendly)
@@ -93,39 +99,17 @@ stringify([
 // => "A\tB\nC\tD"
 ```
 
-```ts
-// CSV with automatic quoting
-stringify([["Smith, John", "New York"]], { delimiter: "," });
-// => "\"Smith, John\",New York"
-```
-
-```ts
-// Handle empty values
-stringify([["A", null, "C"]], { delimiter: ",", emptyValue: null });
-// => "A,,C"
-```
-
-```ts
-// Custom empty representation
-stringify([["A", "N/A", "C"]], {
-  delimiter: ",",
-  emptyValue: "N/A",
-  emptyOutput: "",
-});
-// => "A,,C"
-```
-
 ---
 
 ## Delimiter Detection
 
-`parse` automatically chooses the delimiter by analyzing the first lines of clipboard text:
+`parse` analyzes the first lines of text:
 
-- tabs (Excel) take priority
-- commas, semicolons, pipes, and spaces detected as needed
-- delimiters inside quotes are ignored
-- header-shaped rows improve accuracy
-- safe fallback to **comma**
+- Tabs (Excel) take priority
+- Commas, semicolons, pipes, and spaces detected heuristically
+- Delimiters inside quotes are ignored
+- Header-shaped rows improve accuracy
+- Safe fallback to **comma**
 
 ---
 
@@ -160,8 +144,7 @@ parse("A,,C", { emptyValue: "N/A" });
 
 ### `padRows`
 
-Pads all rows to the same number of columns using `emptyValue`.
-Useful when you want a guaranteed rectangular matrix.
+Pads rows to equal width using `emptyValue`.
 Default: **`false`**
 
 ```ts
@@ -173,7 +156,7 @@ parse("A,B\nC", { padRows: true });
 
 ### `skipEmptyRows`
 
-Drops fully empty rows instead of representing them as `[emptyValue]`.
+Drops fully empty rows.
 Default: **`false`**
 
 ```ts
@@ -198,12 +181,12 @@ parse("A,,C\n,B,", { skipEmptyCells: true });
 
 ### `trim`
 
-Removes leading/trailing whitespace from each cell.
+Trims whitespace inside each cell.
 Default: **`true`**
 
 ```ts
-parse("  A  ,  B  ", { trim: true });
-// => [["A", "B"]]
+parse("  A  ,  B  ");
+// => [["A","B"]]
 ```
 
 ---
@@ -212,8 +195,7 @@ parse("  A  ,  B  ", { trim: true });
 
 ### `delimiter`
 
-Character to use between cells.
-Default: **`"\t"`** (tab)
+Default: **`\t`**
 
 ```ts
 stringify([["A", "B"]], { delimiter: "," });
@@ -224,20 +206,19 @@ stringify([["A", "B"]], { delimiter: "," });
 
 ### `alwaysQuote`
 
-Whether to quote all cells, even if not necessary.
+Quote every cell.
 Default: **`false`**
 
 ```ts
 stringify([["A", "B"]], { delimiter: ",", alwaysQuote: true });
-// => '"A","B"'
+// => "\"A\",\"B\""
 ```
 
 ---
 
 ### `lineEnding`
 
-Line ending to use between rows.
-Default: **`"\n"`**
+Default: **`\n`**
 
 ```ts
 stringify([["A"], ["B"]], { lineEnding: "\r\n" });
@@ -248,14 +229,11 @@ stringify([["A"], ["B"]], { lineEnding: "\r\n" });
 
 ### `emptyValue`
 
-Value in your data that represents "empty" cells.
+Value considered “empty” in your data.
 Default: **`null`**
 
 ```ts
-stringify([["A", null, "C"]], { delimiter: ",", emptyValue: null });
-// => "A,,C"
-
-stringify([["A", 0, "C"]], { delimiter: ",", emptyValue: 0 });
+stringify([["A", null, "C"]], { delimiter: "," });
 // => "A,,C"
 ```
 
@@ -273,27 +251,6 @@ stringify([["A", null, "C"]], {
   emptyOutput: "N/A",
 });
 // => "A,N/A,C"
-```
-
----
-
-## Round-trip Example
-
-```ts
-import { parse, stringify } from "cliptabular";
-
-// Parse clipboard data
-const clipboardText = "Name\tAge\nJohn\t30";
-const data = parse(clipboardText);
-// => [["Name","Age"],["John","30"]]
-
-// Modify data
-data[1][1] = "31";
-
-// Convert back to clipboard format
-const newText = stringify(data);
-await navigator.clipboard.writeText(newText);
-// Clipboard now contains: "Name\tAge\nJohn\t31"
 ```
 
 [actions-badge]: https://flat.badgen.net/github/checks/jimmy-guzman/cliptabular/main?icon=github
