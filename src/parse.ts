@@ -1,23 +1,6 @@
-const DELIMITERS_ENTRIES = [
-  ["\t", 10],
-  [",", 8],
-  [";", 4],
-  ["|", 3],
-  [" ", 1],
-  ["\u001F", 0],
-  ["^", 0],
-  ["~", 0],
-  [":", 0],
-] as const;
+import type { Delimiter } from "./delimiters";
 
-const DELIMITERS = DELIMITERS_ENTRIES.map(([delimiter]) => delimiter);
-
-type Delimiter = (typeof DELIMITERS)[number];
-
-const DELIMITER_PRIORITY = Object.fromEntries(DELIMITERS_ENTRIES) as Record<
-  Delimiter,
-  number
->;
+import { DELIMITER_PRIORITY, DELIMITERS } from "./delimiters";
 
 /**
  * Counts how many times a delimiter appears in a line,
