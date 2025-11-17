@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/jimmy-guzman/cliptabular/compare/v1.1.2...v1.2.0) (2025-11-17)
+
+
+### Features
+
+* ✨ add `stringify` module ([#12](https://github.com/jimmy-guzman/cliptabular/issues/12)) ([b50ce91](https://github.com/jimmy-guzman/cliptabular/commit/b50ce912554bb834742bb6d48cb40c8dde0336c5))
+
 ## [1.1.2](https://github.com/jimmy-guzman/cliptabular/compare/v1.1.1...v1.1.2) (2025-11-16)
 
 
