@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/jimmy-guzman/cliptabular/compare/v1.2.0...v1.3.0) (2025-11-18)
+
+
+### Features
+
+* ✨ export `Delimiter` type ([#13](https://github.com/jimmy-guzman/cliptabular/issues/13)) ([ddc4de4](https://github.com/jimmy-guzman/cliptabular/commit/ddc4de46892976d0cfc86fbcfdd1383c65a7d6d9))
+
 # [1.2.0](https://github.com/jimmy-guzman/cliptabular/compare/v1.1.2...v1.2.0) (2025-11-17)
 
 
