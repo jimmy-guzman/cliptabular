@@ -253,12 +253,12 @@ stringify([["A", null, "C"]], {
 // => "A,N/A,C"
 ```
 
-[actions-badge]: https://flat.badgen.net/github/checks/jimmy-guzman/cliptabular/main?icon=github
-[version-badge]: https://flat.badgen.net/npm/v/cliptabular?icon=npm
+[actions-badge]: https://img.shields.io/github/actions/workflow/status/jimmy-guzman/cliptabular/cd.yml?branch=main&style=flat-square&logo=github
+[version-badge]: https://img.shields.io/npm/v/cliptabular?style=flat-square&logo=npm
 [package]: https://www.npmjs.com/package/cliptabular
-[downloads-badge]: https://flat.badgen.net/npm/dm/cliptabular?icon=npm
+[downloads-badge]: https://img.shields.io/npm/dm/cliptabular?style=flat-square&logo=npm
 [npmtrends]: https://www.npmtrends.com/cliptabular
 [license]: https://github.com/jimmy-guzman/cliptabular/blob/master/LICENSE
-[license-badge]: https://flat.badgen.net/github/license/jimmy-guzman/cliptabular?icon=github
+[license-badge]: https://img.shields.io/github/license/jimmy-guzman/cliptabular?style=flat-square&logo=open-source-initiative
 [packagephobia]: https://packagephobia.com/result?p=cliptabular
-[install-size-badge]: https://flat.badgen.net/packagephobia/install/cliptabular?icon=packagephobia
+[install-size-badge]: https://img.shields.io/badge/dynamic/json?url=https://packagephobia.com/v2/api.json%3Fp=cliptabular&query=$.install.pretty&label=install%20size&style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwM
