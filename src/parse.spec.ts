@@ -520,65 +520,6 @@ describe("parse", () => {
     });
   });
 
-  describe("Edge cases", () => {
-    it("should return empty array for empty string", () => {
-      expect(parse("")).toStrictEqual([]);
-    });
-
-    it("should return empty array for null", () => {
-      expect(parse(null as unknown as string)).toStrictEqual([]);
-    });
-
-    it("should return empty array for undefined", () => {
-      expect(parse(undefined as unknown as string)).toStrictEqual([]);
-    });
-
-    it("should handle single cell", () => {
-      expect(parse("Hello")).toStrictEqual([["Hello"]]);
-    });
-
-    it("should handle single row with multiple cells", () => {
-      expect(parse("A,B,C")).toStrictEqual([["A", "B", "C"]]);
-    });
-
-    it("should keep whitespace-only rows by default", () => {
-      const input = "A,B\n   \nC,D";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["A", "B"], [null], ["C", "D"]]);
-    });
-
-    it("should skip whitespace-only rows when skipEmptyRows is true", () => {
-      const input = "A,B\n   \nC,D";
-      const result = parse(input, { skipEmptyRows: true });
-
-      expect(result).toStrictEqual([
-        ["A", "B"],
-        ["C", "D"],
-      ]);
-    });
-
-    it("should handle comma followed by space", () => {
-      const input = "A,B, C\nD,E, F";
-      const result = parse(input);
-
-      expect(result).toStrictEqual([
-        ["A", "B", "C"],
-        ["D", "E", "F"],
-      ]);
-    });
-
-    it("should treat unmatched quotes as literal content", () => {
-      const input = 'Name,Note\nJohn,"Unclosed quote';
-      const result = parse(input);
-
-      expect(result).toStrictEqual([
-        ["Name", "Note"],
-        ["John", "Unclosed quote"],
-      ]);
-    });
-  });
-
   describe("Delimiter detection", () => {
     it("should prefer tabs over commas when both exist", () => {
       const input = "A,B\tC,D\nE,F\tG,H";
@@ -610,9 +551,7 @@ describe("parse", () => {
 
       expect(result).toStrictEqual([["Hello\tWorld", "123"]]);
     });
-  });
 
-  describe("Additional delimiters & header weighting", () => {
     it("should detect semicolon-delimited data", () => {
       const input = "Name;Age;City\nJohn;30;New York\nJane;25;Boston";
       const result = parse(input);
@@ -798,7 +737,41 @@ describe("parse", () => {
     });
   });
 
-  describe("Real-world scenarios", () => {
+  describe("Performance", () => {
+    it("should handle many columns", () => {
+      const headers = Array.from({ length: 50 }, (_, i) => `Col${i}`).join(",");
+      const data = Array.from({ length: 50 }, (_, i) => `Val${i}`).join(",");
+      const input = `${headers}\n${data}`;
+      const result = parse(input);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toHaveLength(50);
+      expect(result[1]).toHaveLength(50);
+    });
+
+    it("should handle very long cell content", () => {
+      const longText = "A".repeat(5000);
+      const input = `Text\n${longText}`;
+      const result = parse(input);
+
+      expect(result).toStrictEqual([["Text"], [longText]]);
+    });
+
+    it("should handle many rows", () => {
+      const rows = Array.from({ length: 100 }, (_, i) => {
+        return `Row${i},Value${i},${i * 1000}`;
+      });
+      const input = `Name,Label,Value\n${rows.join("\n")}`;
+      const result = parse(input);
+
+      expect(result).toHaveLength(101);
+      expect(result[0]).toStrictEqual(["Name", "Label", "Value"]);
+      expect(result[1]).toStrictEqual(["Row0", "Value0", "0"]);
+      expect(result[100]).toStrictEqual(["Row99", "Value99", "99000"]);
+    });
+  });
+
+  describe("Robustness", () => {
     it("should handle Excel financial report", () => {
       const input =
         "Product\tRevenue\tProfit\nWidget A\t$1,234,567.89\t$234,567.89\nWidget B\t$987,654.32\t$123,456.78";
@@ -887,39 +860,62 @@ describe("parse", () => {
         ["$1,234,567,890.12"],
       ]);
     });
-  });
 
-  describe("Performance", () => {
-    it("should handle many columns", () => {
-      const headers = Array.from({ length: 50 }, (_, i) => `Col${i}`).join(",");
-      const data = Array.from({ length: 50 }, (_, i) => `Val${i}`).join(",");
-      const input = `${headers}\n${data}`;
-      const result = parse(input);
-
-      expect(result).toHaveLength(2);
-      expect(result[0]).toHaveLength(50);
-      expect(result[1]).toHaveLength(50);
+    it("should return empty array for empty string", () => {
+      expect(parse("")).toStrictEqual([]);
     });
 
-    it("should handle very long cell content", () => {
-      const longText = "A".repeat(5000);
-      const input = `Text\n${longText}`;
-      const result = parse(input);
-
-      expect(result).toStrictEqual([["Text"], [longText]]);
+    it("should return empty array for null", () => {
+      expect(parse(null as unknown as string)).toStrictEqual([]);
     });
 
-    it("should handle many rows", () => {
-      const rows = Array.from({ length: 100 }, (_, i) => {
-        return `Row${i},Value${i},${i * 1000}`;
-      });
-      const input = `Name,Label,Value\n${rows.join("\n")}`;
+    it("should return empty array for undefined", () => {
+      expect(parse(undefined as unknown as string)).toStrictEqual([]);
+    });
+
+    it("should handle single cell", () => {
+      expect(parse("Hello")).toStrictEqual([["Hello"]]);
+    });
+
+    it("should handle single row with multiple cells", () => {
+      expect(parse("A,B,C")).toStrictEqual([["A", "B", "C"]]);
+    });
+
+    it("should keep whitespace-only rows by default", () => {
+      const input = "A,B\n   \nC,D";
       const result = parse(input);
 
-      expect(result).toHaveLength(101);
-      expect(result[0]).toStrictEqual(["Name", "Label", "Value"]);
-      expect(result[1]).toStrictEqual(["Row0", "Value0", "0"]);
-      expect(result[100]).toStrictEqual(["Row99", "Value99", "99000"]);
+      expect(result).toStrictEqual([["A", "B"], [null], ["C", "D"]]);
+    });
+
+    it("should skip whitespace-only rows when skipEmptyRows is true", () => {
+      const input = "A,B\n   \nC,D";
+      const result = parse(input, { skipEmptyRows: true });
+
+      expect(result).toStrictEqual([
+        ["A", "B"],
+        ["C", "D"],
+      ]);
+    });
+
+    it("should handle comma followed by space", () => {
+      const input = "A,B, C\nD,E, F";
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["A", "B", "C"],
+        ["D", "E", "F"],
+      ]);
+    });
+
+    it("should treat unmatched quotes as literal content", () => {
+      const input = 'Name,Note\nJohn,"Unclosed quote';
+      const result = parse(input);
+
+      expect(result).toStrictEqual([
+        ["Name", "Note"],
+        ["John", "Unclosed quote"],
+      ]);
     });
   });
 
